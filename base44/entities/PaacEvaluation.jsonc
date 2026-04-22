@@ -1,0 +1,69 @@
+{
+  "name": "PaacEvaluation",
+  "type": "object",
+  "properties": {
+    "rep_email": {
+      "type": "string",
+      "description": "E-mail do representante avaliado"
+    },
+    "rep_name": {
+      "type": "string",
+      "description": "Nome do representante avaliado"
+    },
+    "leader_email": {
+      "type": "string",
+      "description": "E-mail do líder que preencheu"
+    },
+    "leader_name": {
+      "type": "string",
+      "description": "Nome do líder que preencheu"
+    },
+    "sector": {
+      "type": "string",
+      "description": "Setor do representante"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["demanda", "pdv"],
+      "description": "Tipo de PAAC: visitas a médicos ou PDV"
+    },
+    "evaluation_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data do acompanhamento de campo"
+    },
+    "scores": {
+      "type": "object",
+      "description": "Mapa chave→nota (N, A ou S) para cada critério avaliado"
+    },
+    "combinados": {
+      "type": "string",
+      "description": "Anotações livres do acompanhamento — o que foi combinado"
+    },
+    "tasks": {
+      "type": "array",
+      "description": "Tarefas de desenvolvimento geradas a partir dos critérios com nota N",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "criteria_key": { "type": "string" },
+          "criteria_label": { "type": "string" },
+          "section_label": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["pendente", "em_andamento", "concluido"],
+            "default": "pendente"
+          },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "completed"],
+      "default": "draft"
+    }
+  },
+  "required": ["rep_email", "leader_email", "type", "evaluation_date"]
+}

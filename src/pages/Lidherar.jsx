@@ -1,0 +1,507 @@
+import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { createPageUrl } from '@/utils';
+import {
+  ArrowRight,
+  CheckCircle2,
+  Clock,
+  Circle,
+  ChevronDown,
+  ChevronUp,
+  MessageSquare,
+  ClipboardCheck,
+  Users,
+  TrendingUp,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { calcScore, SCORE_LABEL, PAAC_DEMANDA, PAAC_PDV } from '@/lib/paacConfig';
+
+const SCORE_COLOR = {
+  N: 'bg-rose-100 text-rose-700 border-rose-200',
+  A: 'bg-amber-100 text-amber-700 border-amber-200',
+  S: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+};
+
+const TASK_STATUS_CONFIG = {
+  pendente: { label: 'Pendente', icon: Circle, color: 'text-rose-500' },
+  em_andamento: { label: 'Em andamento', icon: Clock, color: 'text-amber-500' },
+  concluido: { label: 'Concluído', icon: CheckCircle2, color: 'text-emerald-600' },
+};
+
+function ScorePill({ score }) {
+  if (!score) return <span className="text-ink-300 text-xs">—</span>;
+  return (
+    <span
+      className={`inline-flex items-center justify-center h-6 w-6 rounded-md border text-xs font-bold ${SCORE_COLOR[score]}`}
+    >
+      {score}
+    </span>
+  );
+}
+
+function TaskRow({ task, onToggle }) {
+  const status = task.status || 'pendente';
+  const cfg = TASK_STATUS_CONFIG[status];
+  const Icon = cfg.icon;
+  const next = status === 'pendente' ? 'em_andamento' : status === 'em_andamento' ? 'concluido' : 'pendente';
+
+  return (
+    <div
+      className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${
+        status === 'concluido'
+          ? 'bg-emerald-50 border-emerald-100'
+          : 'bg-white border-ink-100 hover:border-gold-200'
+      }`}
+    >
+      <button
+        onClick={() => onToggle(task.id, next)}
+        className={`mt-0.5 shrink-0 ${cfg.color} hover:opacity-70 transition-opacity`}
+        title={`Mudar para: ${TASK_STATUS_CONFIG[next].label}`}
+      >
+        <Icon className="w-5 h-5" />
+      </button>
+      <div className="flex-1 min-w-0">
+        <p
+          className={`text-sm leading-relaxed ${
+            status === 'concluido' ? 'line-through text-ink-400' : 'text-ink-800'
+          }`}
+        >
+          {task.criteria_label}
+        </p>
+        <p className="text-[11px] text-ink-400 mt-0.5">{task.section_label}</p>
+      </div>
+      <span
+        className={`text-[10px] uppercase tracking-wider font-semibold shrink-0 ${cfg.color}`}
+      >
+        {cfg.label}
+      </span>
+    </div>
+  );
+}
+
+function EvaluationCard({ ev, config }) {
+  const [expanded, setExpanded] = useState(false);
+  const [tasks, setTasks] = useState(ev.tasks || []);
+  const [updatingTask, setUpdatingTask] = useState(false);
+
+  const score = calcScore(ev.scores || {});
+  const pendingTasks = tasks.filter((t) => t.status !== 'concluido').length;
+  const doneTasks = tasks.filter((t) => t.status === 'concluido').length;
+  const totalTasks = tasks.length;
+
+  const handleToggleTask = async (taskId, newStatus) => {
+    const updatedTasks = tasks.map((t) =>
+      t.id === taskId ? { ...t, status: newStatus } : t
+    );
+    setTasks(updatedTasks);
+    setUpdatingTask(true);
+    try {
+      await base44.entities.PaacEvaluation.update(ev.id, { tasks: updatedTasks });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUpdatingTask(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-ink-100 overflow-hidden">
+      {/* Card Header */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full text-left p-5 hover:bg-paper-50/50 transition-colors"
+      >
+        <div className="flex items-start gap-4">
+          <div className="flex flex-col items-center gap-1 shrink-0 mt-1">
+            <Badge
+              className={`text-[10px] uppercase tracking-wider font-semibold border-none ${
+                ev.type === 'demanda'
+                  ? 'bg-violet-100 text-violet-700'
+                  : 'bg-sky-100 text-sky-700'
+              }`}
+            >
+              {ev.type === 'demanda' ? 'Demanda' : 'PDV'}
+            </Badge>
+            <span className="text-xs text-ink-500">
+              {new Date(ev.evaluation_date).toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              })}
+            </span>
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex-1 h-2 bg-paper-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-gold-500 to-gold-300"
+                  style={{ width: `${score}%` }}
+                />
+              </div>
+              <span className="text-sm font-semibold text-ink-900 tabular-nums w-10 text-right">
+                {score}%
+              </span>
+            </div>
+            <div className="flex items-center gap-4 text-xs text-ink-500">
+              {totalTasks > 0 && (
+                <span className="flex items-center gap-1">
+                  <ClipboardCheck className="w-3.5 h-3.5 text-gold-600" />
+                  {doneTasks}/{totalTasks} tarefas concluídas
+                </span>
+              )}
+              {ev.combinados && (
+                <span className="flex items-center gap-1">
+                  <MessageSquare className="w-3.5 h-3.5 text-sky-500" />
+                  Combinados registrados
+                </span>
+              )}
+            </div>
+          </div>
+          {expanded ? (
+            <ChevronUp className="w-4 h-4 text-ink-400 mt-1 shrink-0" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-ink-400 mt-1 shrink-0" />
+          )}
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="border-t border-ink-100">
+          {/* Score grid */}
+          <div className="p-5 space-y-6">
+            {config.map((section) => (
+              <div key={section.section}>
+                <p className="text-xs font-bold text-ink-500 uppercase tracking-wider mb-3">
+                  {section.section}. {section.label}
+                </p>
+                {section.subsections.map((sub) => (
+                  <div key={sub.key} className="mb-4">
+                    <p className="text-[11px] font-semibold text-gold-700 uppercase tracking-wider mb-2">
+                      {sub.key} — {sub.label}
+                    </p>
+                    <div className="space-y-1.5">
+                      {sub.criteria.map((crit) => (
+                        <div
+                          key={crit.key}
+                          className="flex items-start justify-between gap-3"
+                        >
+                          <p className="text-sm text-ink-700 leading-relaxed flex-1">
+                            {crit.label}
+                          </p>
+                          <ScorePill score={ev.scores?.[crit.key]} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+
+            {/* Combinados */}
+            {ev.combinados && (
+              <div className="bg-sky-50 border border-sky-200 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageSquare className="w-4 h-4 text-sky-600" />
+                  <p className="text-sm font-semibold text-sky-800">Combinados</p>
+                </div>
+                <p className="text-sm text-sky-700 whitespace-pre-wrap leading-relaxed">
+                  {ev.combinados}
+                </p>
+              </div>
+            )}
+
+            {/* Tasks */}
+            {tasks.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-semibold text-ink-800">
+                    Tarefas de Desenvolvimento
+                  </p>
+                  <span className="text-xs text-ink-500 tabular-nums">
+                    {doneTasks}/{totalTasks} concluídas
+                  </span>
+                </div>
+                {totalTasks > 0 && (
+                  <div className="h-1.5 bg-paper-100 rounded-full overflow-hidden mb-3">
+                    <div
+                      className="h-full bg-emerald-500 transition-all"
+                      style={{ width: `${Math.round((doneTasks / totalTasks) * 100)}%` }}
+                    />
+                  </div>
+                )}
+                <div className="space-y-2">
+                  {tasks.map((task) => (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      onToggle={handleToggleTask}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function Lidherar() {
+  const [user, setUser] = useState(null);
+  const [myProfile, setMyProfile] = useState(null);
+  const [evals, setEvals] = useState([]);
+  const [team, setTeam] = useState([]);
+  const [selectedRep, setSelectedRep] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isLeader, setIsLeader] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const u = await base44.auth.me();
+        setUser(u);
+        if (!u) return;
+
+        const [participants, myEvals, myTeam] = await Promise.all([
+          base44.entities.Participant.filter({ email: u.email }),
+          base44.entities.PaacEvaluation.filter({ rep_email: u.email }),
+          base44.entities.Participant.filter({ manager_email: u.email }),
+        ]);
+
+        if (participants.length > 0) setMyProfile(participants[0]);
+        setEvals(myEvals);
+        setTeam(myTeam);
+        setIsLeader(myTeam.length > 0 || u.role === 'super_admin');
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const loadRepEvals = async (rep) => {
+    setSelectedRep(rep);
+    try {
+      const repEvals = await base44.entities.PaacEvaluation.filter({
+        rep_email: rep.email,
+      });
+      setEvals(repEvals);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const currentEvals = evals
+    .filter((e) => e.status === 'completed')
+    .sort((a, b) => new Date(b.evaluation_date) - new Date(a.evaluation_date));
+
+  const demandaEvals = currentEvals.filter((e) => e.type === 'demanda');
+  const pdvEvals = currentEvals.filter((e) => e.type === 'pdv');
+
+  const overallScore =
+    currentEvals.length > 0
+      ? Math.round(
+          currentEvals.reduce((acc, e) => acc + calcScore(e.scores || {}), 0) /
+            currentEvals.length
+        )
+      : null;
+
+  const totalTasks = currentEvals.flatMap((e) => e.tasks || []).length;
+  const doneTasks = currentEvals
+    .flatMap((e) => e.tasks || [])
+    .filter((t) => t.status === 'concluido').length;
+
+  const displayName =
+    selectedRep?.full_name || myProfile?.full_name || user?.full_name || 'Colaborador';
+
+  return (
+    <div className="space-y-8">
+      {/* HERO */}
+      <section className="relative overflow-hidden rounded-3xl bg-ink-grid text-white shadow-ink">
+        <div className="absolute -top-20 -right-10 h-64 w-64 rounded-full bg-gold-400/15 blur-3xl" />
+        <div className="relative px-7 py-8 lg:px-10 lg:py-10 grid lg:grid-cols-[1fr_auto] gap-6 items-center">
+          <div className="space-y-3">
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-500/15 border border-gold-400/30">
+              <Users className="w-3.5 h-3.5 text-gold-300" />
+              <span className="text-[11px] uppercase tracking-[0.2em] text-gold-200 font-semibold">
+                Etapa 2 · Desenvolvimento
+              </span>
+            </span>
+            <h1 className="font-display text-3xl lg:text-4xl font-semibold">
+              Ficha de{' '}
+              <span className="text-gold-300">
+                {selectedRep ? selectedRep.full_name.split(' ')[0] : displayName.split(' ')[0]}
+              </span>
+            </h1>
+            <p className="text-ink-200 max-w-lg leading-relaxed">
+              Histórico de acompanhamentos de campo (PAAC), tarefas geradas e combinados registrados pelo gestor.
+            </p>
+          </div>
+          <div className="flex gap-4 flex-wrap">
+            <div className="rounded-2xl bg-white/5 border border-white/10 px-5 py-4 text-center">
+              <p className="font-display text-3xl font-semibold text-gold-300 tabular-nums">
+                {currentEvals.length}
+              </p>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-ink-300 mt-1">
+                avaliações
+              </p>
+            </div>
+            {overallScore !== null && (
+              <div className="rounded-2xl bg-gold-shine px-5 py-4 text-center">
+                <p className="font-display text-3xl font-semibold text-ink-900 tabular-nums">
+                  {overallScore}%
+                </p>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-ink-900/70 mt-1">
+                  média geral
+                </p>
+              </div>
+            )}
+            {totalTasks > 0 && (
+              <div className="rounded-2xl bg-white/5 border border-white/10 px-5 py-4 text-center">
+                <p className="font-display text-3xl font-semibold text-white tabular-nums">
+                  {doneTasks}/{totalTasks}
+                </p>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-ink-300 mt-1">
+                  tarefas
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* LEADER: team selector */}
+      {isLeader && team.length > 0 && (
+        <section className="bg-white rounded-2xl border border-ink-100 p-5">
+          <p className="text-[11px] uppercase tracking-[0.22em] text-gold-700 font-semibold mb-3">
+            Visualizar ficha de
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => {
+                setSelectedRep(null);
+                base44.entities.PaacEvaluation.filter({ rep_email: user.email }).then(setEvals);
+              }}
+              className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-all ${
+                !selectedRep
+                  ? 'bg-ink-900 text-white border-ink-900'
+                  : 'bg-white text-ink-600 border-ink-200 hover:border-ink-400'
+              }`}
+            >
+              Minha ficha
+            </button>
+            {team.map((rep) => (
+              <button
+                key={rep.id}
+                onClick={() => loadRepEvals(rep)}
+                className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-all ${
+                  selectedRep?.id === rep.id
+                    ? 'bg-gold-400 text-ink-900 border-gold-400 shadow-gold'
+                    : 'bg-white text-ink-600 border-ink-200 hover:border-gold-300'
+                }`}
+              >
+                {rep.full_name.split(' ')[0]}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* NO EVALS STATE */}
+      {!loading && currentEvals.length === 0 && (
+        <div className="bg-white rounded-2xl border border-dashed border-ink-200 p-12 text-center">
+          <ClipboardCheck className="w-12 h-12 text-ink-200 mx-auto mb-4" />
+          <h3 className="font-display text-lg font-semibold text-ink-900">
+            Nenhuma avaliação registrada
+          </h3>
+          <p className="text-ink-500 text-sm mt-2 max-w-sm mx-auto">
+            {isLeader
+              ? 'Vá ao Scanner para preencher o PAAC do representante e gerar a ficha.'
+              : 'Seu gestor ainda não registrou nenhuma avaliação de campo para você.'}
+          </p>
+          {isLeader && (
+            <Button
+              className="mt-5 bg-ink-900 text-gold-200 hover:bg-ink-800 gap-2"
+              onClick={() => (window.location.href = createPageUrl('Scanner'))}
+            >
+              <ArrowRight className="w-4 h-4" /> Ir para o Scanner
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* DEMANDA */}
+      {demandaEvals.length > 0 && (
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="h-2 w-2 rounded-full bg-violet-500" />
+            <p className="font-display text-xl font-semibold text-ink-900">
+              PAAC Demanda — Visitas a Médicos
+            </p>
+            <span className="text-xs text-ink-500">
+              {demandaEvals.length} avaliação{demandaEvals.length !== 1 ? 'ões' : ''}
+            </span>
+          </div>
+          <div className="space-y-4">
+            {demandaEvals.map((ev) => (
+              <EvaluationCard key={ev.id} ev={ev} config={PAAC_DEMANDA} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* PDV */}
+      {pdvEvals.length > 0 && (
+        <section>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="h-2 w-2 rounded-full bg-sky-500" />
+            <p className="font-display text-xl font-semibold text-ink-900">
+              PAAC PDV — Pontos de Venda
+            </p>
+            <span className="text-xs text-ink-500">
+              {pdvEvals.length} avaliação{pdvEvals.length !== 1 ? 'ões' : ''}
+            </span>
+          </div>
+          <div className="space-y-4">
+            {pdvEvals.map((ev) => (
+              <EvaluationCard key={ev.id} ev={ev} config={PAAC_PDV} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* NEXT STEP */}
+      {currentEvals.length > 0 && (
+        <section className="relative overflow-hidden rounded-3xl bg-gold-shine p-6 md:p-8">
+          <div className="relative flex flex-col md:flex-row items-start md:items-center gap-5">
+            <div className="p-3 bg-ink-900 rounded-2xl shrink-0">
+              <TrendingUp className="w-6 h-6 text-gold-300" />
+            </div>
+            <div className="flex-1">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-ink-900/70 font-semibold">
+                Próximo passo
+              </p>
+              <h3 className="font-display text-xl font-semibold text-ink-900 mt-1">
+                Academy — Trilha de Liderança
+              </h3>
+              <p className="text-ink-900/80 text-sm mt-1 max-w-2xl">
+                Use os cursos dos 7 Pilares para trabalhar as competências com nota <strong>N</strong> e executar as tarefas de desenvolvimento.
+              </p>
+            </div>
+            <Button
+              className="bg-ink-900 hover:bg-ink-800 text-gold-200 shrink-0 gap-2 rounded-full px-5"
+              onClick={() => (window.location.href = createPageUrl('Academy'))}
+            >
+              Ir para a Academy <ArrowRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}

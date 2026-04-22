@@ -1,0 +1,72 @@
+{
+  "name": "DevelopmentAgreement",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "company_id": {
+      "type": "string"
+    },
+    "competencies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Compet\u00eancias/fatores vinculados ao Scanner"
+    },
+    "goals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "deadline": {
+            "type": "string"
+          },
+          "how": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Metas/a\u00e7\u00f5es de desenvolvimento"
+    },
+    "target_role": {
+      "type": "string",
+      "description": "Cargo/perfil alvo"
+    },
+    "target_level": {
+      "type": "string",
+      "description": "N\u00edvel hier\u00e1rquico alvo"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_template": {
+      "type": "boolean",
+      "default": false,
+      "description": "\u00c9 um modelo reutiliz\u00e1vel?"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "archived"
+      ],
+      "default": "draft"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

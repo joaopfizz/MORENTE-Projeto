@@ -1,0 +1,104 @@
+{
+  "name": "Participant",
+  "type": "object",
+  "properties": {
+    "full_name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "company_id": {
+      "type": "string"
+    },
+    "position": {
+      "type": "string",
+      "description": "Cargo/Fun\u00e7\u00e3o"
+    },
+    "department": {
+      "type": "string",
+      "description": "Departamento/\u00c1rea"
+    },
+    "team": {
+      "type": "string",
+      "description": "Time/Grupo"
+    },
+    "business_unit": {
+      "type": "string",
+      "description": "Unidade de Neg\u00f3cio"
+    },
+    "location": {
+      "type": "string",
+      "description": "Localidade/Filial"
+    },
+    "cost_center": {
+      "type": "string",
+      "description": "Centro de Custo"
+    },
+    "manager_email": {
+      "type": "string",
+      "description": "E-mail do gestor direto"
+    },
+    "hierarchy_level": {
+      "type": "string",
+      "enum": [
+        "c_level",
+        "diretor",
+        "gerente",
+        "coordenador",
+        "supervisor",
+        "especialista",
+        "analista",
+        "assistente",
+        "operacional"
+      ],
+      "description": "N\u00edvel hier\u00e1rquico"
+    },
+    "contract_type": {
+      "type": "string",
+      "enum": [
+        "clt",
+        "pj",
+        "estagiario",
+        "terceirizado"
+      ],
+      "default": "clt"
+    },
+    "hire_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags customizadas para segmenta\u00e7\u00e3o"
+    },
+    "custom_field_1": {
+      "type": "string",
+      "description": "Campo customizado 1"
+    },
+    "custom_field_2": {
+      "type": "string",
+      "description": "Campo customizado 2"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "pending"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "full_name",
+    "email",
+    "company_id"
+  ]
+}

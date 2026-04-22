@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 30% 98%;
+    --foreground: 222 45% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 45% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 45% 9%;
+    --primary: 222 45% 9%;
+    --primary-foreground: 40 30% 98%;
+    --secondary: 40 20% 94%;
+    --secondary-foreground: 222 45% 9%;
+    --muted: 40 15% 94%;
+    --muted-foreground: 222 15% 45%;
+    --accent: 40 50% 90%;
+    --accent-foreground: 222 45% 9%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 40 15% 88%;
+    --input: 40 15% 88%;
+    --ring: 42 60% 50%;
+    --chart-1: 42 60% 50%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 222 45% 20%;
+    --chart-4: 25 80% 55%;
+    --chart-5: 262 50% 55%;
+    --radius: 0.75rem;
+    --sidebar-background: 222 55% 7%;
+    --sidebar-foreground: 40 15% 85%;
+    --sidebar-primary: 42 60% 50%;
+    --sidebar-primary-foreground: 222 45% 9%;
+    --sidebar-accent: 222 40% 15%;
+    --sidebar-accent-foreground: 40 15% 95%;
+    --sidebar-border: 222 40% 15%;
+    --sidebar-ring: 42 60% 50%;
+  }
+  .dark {
+    --background: 222 55% 7%;
+    --foreground: 40 15% 95%;
+    --card: 222 45% 10%;
+    --card-foreground: 40 15% 95%;
+    --popover: 222 45% 10%;
+    --popover-foreground: 40 15% 95%;
+    --primary: 42 60% 50%;
+    --primary-foreground: 222 45% 9%;
+    --secondary: 222 40% 15%;
+    --secondary-foreground: 40 15% 95%;
+    --muted: 222 40% 15%;
+    --muted-foreground: 40 10% 65%;
+    --accent: 222 40% 15%;
+    --accent-foreground: 40 15% 95%;
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 40 15% 95%;
+    --border: 222 40% 15%;
+    --input: 222 40% 15%;
+    --ring: 42 60% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "ss01", "cv11";
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Fraunces', ui-serif, Georgia, serif;
+    letter-spacing: -0.02em;
+    font-feature-settings: "ss01";
+  }
+}
+
+@layer utilities {
+  .text-display {
+    font-family: 'Fraunces', ui-serif, Georgia, serif;
+    letter-spacing: -0.02em;
+  }
+  .bg-paper-grid {
+    background-color: #fbf9f5;
+    background-image: radial-gradient(circle, rgba(11, 17, 32, 0.05) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  .bg-ink-grid {
+    background-color: #0b1120;
+    background-image:
+      linear-gradient(rgba(212, 167, 74, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(212, 167, 74, 0.04) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+  .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(11, 17, 32, 0.15);
+    border-radius: 9999px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(11, 17, 32, 0.3);
+  }
+}

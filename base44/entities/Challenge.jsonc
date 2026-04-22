@@ -1,0 +1,73 @@
+{
+  "name": "Challenge",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "company_id": {
+      "type": "string"
+    },
+    "objective": {
+      "type": "string",
+      "description": "Objetivo principal do desafio"
+    },
+    "instructions": {
+      "type": "string",
+      "description": "Instru\u00e7\u00f5es detalhadas / como participar"
+    },
+    "success_criteria": {
+      "type": "string",
+      "description": "Crit\u00e9rios de sucesso"
+    },
+    "points_reward": {
+      "type": "number",
+      "default": 100
+    },
+    "deadline": {
+      "type": "string",
+      "format": "date"
+    },
+    "target_audience": {
+      "type": "string",
+      "description": "P\u00fablico-alvo (departamento, time, n\u00edvel)"
+    },
+    "challenge_type": {
+      "type": "string",
+      "enum": [
+        "team",
+        "individual",
+        "department",
+        "company_wide"
+      ],
+      "default": "team"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "completed",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "cover_image": {
+      "type": "string"
+    },
+    "evidence_required": {
+      "type": "boolean",
+      "default": true
+    },
+    "max_participants": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "title",
+    "description"
+  ]
+}
