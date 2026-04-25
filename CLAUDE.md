@@ -33,6 +33,7 @@ Construído com **React 18 + Vite 6**, integrado opcionalmente ao **Base44 SDK**
 
 | Página | Finalidade |
 |---|---|
+| `Login` | Tela fake de login (e-mail + senha). E-mail define o role; senha é ignorada. Inclui 2 botões de acesso rápido (Carla / Rafael) e transição animada antes de entrar no Dashboard. Rota fora do `LayoutWrapper`. |
 | `Dashboard` | Visão geral do usuário (placeholder, ainda não migrado pro modo demo) |
 | `Scanner` | Aplica a PAAC (Demanda ou PDV). Dialog 2-step: tipo → formulário. **Só gestor** acessa. Cada critério marcado N/A vira task combinada. |
 | `Lidherar` | Hub do gestor com fichas das PAACs. Navegação por **carrossel** entre reps (setas + arrows do teclado). |
@@ -50,12 +51,12 @@ Construído com **React 18 + Vite 6**, integrado opcionalmente ao **Base44 SDK**
 
 ## Modo Demo: Como Funciona
 
-O app tem **dois perfis simulados** que o usuário alterna pelo `RoleSwitcher` na sidebar:
+O app tem **dois perfis simulados**, definidos no momento do **login fake** (`/Login`):
 
 - **Gestor** = `Carla Souza` (carla.souza@arese.com.br) — Gerente Distrital, vê o time todo
 - **Colaborador** = `Rafael Mendes` (rafael.mendes@arese.com.br) — Representante do setor 087
 
-Ao trocar o role, todo o app se adapta: nome no perfil, conteúdo das páginas, permissões, fichas visíveis, etc. As páginas escutam o evento `paac-role-change` para reagir.
+A senha é ignorada (qualquer string é aceita). O e-mail mapeia para o role via `DEMO_ACCOUNTS` em `paacMockData.js`. Para trocar de visão: **logout** (dropdown do avatar na sidebar) → relogar com o outro e-mail. As páginas escutam o evento `paac-role-change` para reagir.
 
 ### Time mockado (5 reps + 1 gestora)
 1. Rafael Mendes — Setor 087 (Campinas/SP)
@@ -70,18 +71,22 @@ Ao trocar o role, todo o app se adapta: nome no perfil, conteúdo das páginas, 
 
 Cada store tem **dados iniciais hardcoded + persistência em localStorage** + dispara **eventos customizados** para sync em tempo real entre componentes.
 
-### `paacMockData.js` — Avaliações PAAC + Roles
+### `paacMockData.js` — Avaliações PAAC + Roles + Auth
 
 | API | O que faz |
 |---|---|
 | `MOCK_TEAM`, `MOCK_REP_PROFILE`, `MOCK_LEADER_PROFILE` | Perfis fixos |
 | `MOCK_EVALUATIONS` | PAACs iniciais (Rafael tem 3, outros 1 cada, Eduardo nenhuma) |
+| `DEMO_ACCOUNTS` | Mapa `email → role` aceito no login fake |
 | `demoStore.getEvaluations()` | Mock + user-created merged |
 | `demoStore.createEvaluation(data)` | Salva nova PAAC no localStorage |
 | `demoStore.getRole()` / `setRole(role)` | Toggle gestor ↔ colaborador |
 | `demoStore.getCurrentUser()` | Retorna leader ou rep conforme role |
-| **localStorage** | `paac_demo_store_v1`, `paac_demo_role_v1` |
-| **eventos** | `paac-role-change`, `paac-evals-change` |
+| `demoStore.isAuthenticated()` | Checa se há sessão demo ativa |
+| `demoStore.login(email)` | Valida e-mail contra `DEMO_ACCOUNTS`, define role, marca sessão |
+| `demoStore.logout()` | Limpa sessão (mantém role pra eventual relogin) |
+| **localStorage** | `paac_demo_store_v1`, `paac_demo_role_v1`, `paac_demo_auth_v1` |
+| **eventos** | `paac-role-change`, `paac-evals-change`, `paac-auth-change` |
 
 ### `paacConfig.js` — Estrutura PAAC
 - `PAAC_DEMANDA` e `PAAC_PDV` — árvore de seções → subseções → critérios
@@ -185,6 +190,7 @@ Charts:    Recharts (Evoluthion antigo usava radar/nine-box)
 ```
 src/
 ├── pages/                  # Uma tela por arquivo
+│   ├── Login.jsx           # Tela fake de login (rota fora do Layout)
 │   ├── Scanner.jsx         # PAAC dialog flow (gestor only)
 │   ├── Lidherar.jsx        # Hub de fichas com carrossel de reps
 │   ├── Academy.jsx         # Catálogo de cursos (mock)
@@ -195,7 +201,7 @@ src/
 │   └── ...
 ├── components/
 │   ├── ui/                 # shadcn/ui base (button, dialog, textarea, …)
-│   ├── layout/AppLayout.jsx # Sidebar + RoleSwitcher + perfil dinâmico
+│   ├── layout/AppLayout.jsx # Sidebar + perfil dinâmico + logout
 │   ├── academy/, admin/, course/, scanner/
 ├── lib/                    # ★ Mock stores e helpers
 │   ├── paacMockData.js     # Avaliações + roles (★ mais importante)
@@ -216,7 +222,8 @@ Disparados via `window.dispatchEvent(new CustomEvent(...))` e ouvidos via `windo
 
 | Evento | Quando dispara | Quem ouve |
 |---|---|---|
-| `paac-role-change` | `demoStore.setRole()` | AppLayout (perfil), todas as páginas role-aware |
+| `paac-auth-change` | `demoStore.login/logout` | App.jsx (route guard, redireciona ↔ `/Login`) |
+| `paac-role-change` | `demoStore.setRole()` / `login()` | AppLayout (perfil), todas as páginas role-aware |
 | `paac-evals-change` | `demoStore.createEvaluation/update` | Lidherar, Athivar, Evoluthion |
 | `academy-progress-change` | qualquer mutação do `academyStore` | Academy, Course, Evoluthion |
 | `athivar-change` | qualquer mutação do `athivarStore` | Athivar, Evoluthion |
@@ -308,4 +315,5 @@ Sem essa variável, o app **roda 100% em modo demo** com os mock stores. É o fl
 4. **Lidherar carrossel** — navegação entre reps (setas + keyboard)
 5. **Academy + Course player** — catálogo mock + player Alura-like com quiz e relatório
 6. **Evoluthion v2** — visão consolidada team/individual com editor de review
-7. **Athivar v2** — sistema completo de missões com gamificação, leaderboard pódio, integração com PAAC e Evoluthion (atual)
+7. **Athivar v2** — sistema completo de missões com gamificação, leaderboard pódio, integração com PAAC e Evoluthion
+8. **Login fake** — `RoleSwitcher` removido; tela `/Login` com e-mail+senha (qualquer senha) define o role; route guard + transição animada; logout pelo dropdown do avatar (atual)
