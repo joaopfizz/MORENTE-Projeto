@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createPageUrl } from '@/utils';
+import { academyStore } from '@/lib/academyMockData';
+import { demoStore } from '@/lib/paacMockData';
 import {
   Search,
   BookOpen,
@@ -8,7 +9,6 @@ import {
   ArrowRight,
   CheckCircle2,
   PlayCircle,
-  Lock,
   Sparkles,
   Users,
   MessageSquare,
@@ -20,8 +20,6 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Skeleton } from '@/components/ui/skeleton';
 
 const PILLARS = [
   {
@@ -31,7 +29,6 @@ const PILLARS = [
     tag: 'pillar_1',
     icon: Sparkles,
     hue: 'from-violet-500/90 to-violet-700',
-    accent: 'text-violet-600',
   },
   {
     id: 2,
@@ -40,7 +37,6 @@ const PILLARS = [
     tag: 'pillar_2',
     icon: Users,
     hue: 'from-sky-500/90 to-sky-700',
-    accent: 'text-sky-600',
   },
   {
     id: 3,
@@ -49,7 +45,6 @@ const PILLARS = [
     tag: 'pillar_3',
     icon: MessageSquare,
     hue: 'from-cyan-500/90 to-cyan-700',
-    accent: 'text-cyan-600',
   },
   {
     id: 4,
@@ -58,7 +53,6 @@ const PILLARS = [
     tag: 'pillar_4',
     icon: Brain,
     hue: 'from-emerald-500/90 to-emerald-700',
-    accent: 'text-emerald-600',
   },
   {
     id: 5,
@@ -67,7 +61,6 @@ const PILLARS = [
     tag: 'pillar_5',
     icon: Compass,
     hue: 'from-amber-500/90 to-amber-700',
-    accent: 'text-amber-600',
   },
   {
     id: 6,
@@ -76,7 +69,6 @@ const PILLARS = [
     tag: 'pillar_6',
     icon: Target,
     hue: 'from-orange-500/90 to-orange-700',
-    accent: 'text-orange-600',
   },
   {
     id: 7,
@@ -85,7 +77,6 @@ const PILLARS = [
     tag: 'pillar_7',
     icon: TrendingUp,
     hue: 'from-rose-500/90 to-rose-700',
-    accent: 'text-rose-600',
   },
 ];
 
@@ -157,47 +148,48 @@ function AllTile({ isActive, onClick, total }) {
   );
 }
 
-function CourseCard({ course, lessonCount, enrollment }) {
-  const progress = enrollment?.progress_percentage || 0;
-  const completed = enrollment?.status === 'completed';
-  const pillar = PILLARS.find((p) => course.tags?.includes(p.tag));
+function CourseCard({ course, userEmail }) {
+  const lessonCount = course.modules.reduce((acc, m) => acc + m.lessons.length, 0);
+  const percent = academyStore.getCoursePercent(userEmail, course);
+  const completed = academyStore.isCourseCompleted(userEmail, course);
+  const pillar = PILLARS.find((p) => p.tag === course.pillar);
   const Icon = pillar?.icon;
+
+  const navigate = () => {
+    window.location.href = createPageUrl('Course') + `?id=${course.id}`;
+  };
 
   return (
     <div
       className="bg-white rounded-2xl overflow-hidden border border-ink-100 hover:border-gold-300 hover:shadow-soft transition-all duration-300 flex flex-col cursor-pointer group"
-      onClick={() => (window.location.href = createPageUrl(`Course?id=${course.id}`))}
+      onClick={navigate}
     >
+      {/* Cover */}
       <div className="relative h-40 overflow-hidden">
-        {course.cover_image ? (
-          <img
-            src={course.cover_image}
-            alt={course.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className={`w-full h-full bg-gradient-to-br ${pillar?.hue || 'from-ink-700 to-ink-900'}`} />
-        )}
+        <div className={`w-full h-full bg-gradient-to-br ${course.cover_color}`} />
         <div className="absolute inset-0 bg-gradient-to-t from-ink-950/80 via-transparent to-transparent" />
 
         {pillar && (
-          <div
-            className={`absolute top-3 left-3 inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full text-white bg-black/40 backdrop-blur-md border border-white/10`}
-          >
+          <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full text-white bg-black/40 backdrop-blur-md border border-white/10">
             {Icon && <Icon className="w-3 h-3" />}
-            <span className="uppercase tracking-wider">P{pillar.id} · {pillar.short}</span>
+            <span className="uppercase tracking-wider">
+              P{pillar.id} · {pillar.short}
+            </span>
           </div>
         )}
+
         {completed && (
           <div className="absolute top-3 right-3 bg-emerald-500 rounded-full p-1.5 shadow-lg">
             <CheckCircle2 className="w-3.5 h-3.5 text-white" />
           </div>
         )}
+
         <div className="absolute bottom-3 right-3 bg-white/95 rounded-full p-2.5 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
           <PlayCircle className="w-4 h-4 text-ink-900" />
         </div>
       </div>
 
+      {/* Body */}
       <div className="p-4 flex-1 flex flex-col">
         <h3 className="font-display font-semibold text-ink-900 line-clamp-2 leading-snug mb-1.5">
           {course.title}
@@ -208,7 +200,7 @@ function CourseCard({ course, lessonCount, enrollment }) {
 
         <div className="flex items-center gap-3 text-[11px] text-ink-400 mb-3">
           <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3" /> {course.duration_minutes} min
+            <Clock className="w-3 h-3" /> {course.duration_min} min
           </span>
           <span className="h-1 w-1 rounded-full bg-ink-200" />
           <span className="flex items-center gap-1">
@@ -216,24 +208,25 @@ function CourseCard({ course, lessonCount, enrollment }) {
           </span>
         </div>
 
-        {enrollment ? (
+        {/* Progress */}
+        {percent > 0 ? (
           <div>
             <div className="flex justify-between text-[11px] mb-1">
               <span className="text-ink-500 font-medium">
                 {completed ? 'Concluído' : 'Em andamento'}
               </span>
-              <span className="font-semibold text-gold-700 tabular-nums">{progress}%</span>
+              <span className="font-semibold text-gold-700 tabular-nums">{percent}%</span>
             </div>
             <div className="h-1.5 bg-paper-100 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-gold-500 to-gold-300 transition-all"
-                style={{ width: `${progress}%` }}
+                style={{ width: `${percent}%` }}
               />
             </div>
           </div>
         ) : (
           <div className="text-[11px] text-ink-400 flex items-center gap-1.5">
-            <Lock className="w-3 h-3" /> Não iniciado
+            <PlayCircle className="w-3 h-3" /> Não iniciado
           </div>
         )}
       </div>
@@ -243,58 +236,48 @@ function CourseCard({ course, lessonCount, enrollment }) {
 
 export default function Academy() {
   const [courses, setCourses] = useState([]);
-  const [lessonCounts, setLessonCounts] = useState({});
-  const [enrollments, setEnrollments] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activePillar, setActivePillar] = useState('all');
-  const [user, setUser] = useState(null);
+  const [userEmail, setUserEmail] = useState('');
+  const [tick, setTick] = useState(0); // forces re-render on progress change
+
+  const refresh = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const u = await base44.auth.me();
-        setUser(u);
-        const [allCourses, allLessons, userEnrollments] = await Promise.all([
-          base44.entities.Course.filter({ is_published: true }),
-          base44.entities.Lesson.list(),
-          u ? base44.entities.Enrollment.filter({ user_id: u.id }) : [],
-        ]);
-        setCourses(allCourses);
-        const counts = {};
-        allLessons.forEach((l) => {
-          counts[l.course_id] = (counts[l.course_id] || 0) + 1;
-        });
-        setLessonCounts(counts);
-        setEnrollments(userEnrollments);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setLoading(false);
-      }
+    setCourses(academyStore.getCourses());
+    setUserEmail(demoStore.getCurrentUser().email);
+
+    const onRole = () => {
+      setUserEmail(demoStore.getCurrentUser().email);
     };
-    load();
-  }, []);
+    const onProgress = () => refresh();
+
+    window.addEventListener('paac-role-change', onRole);
+    window.addEventListener('academy-progress-change', onProgress);
+    return () => {
+      window.removeEventListener('paac-role-change', onRole);
+      window.removeEventListener('academy-progress-change', onProgress);
+    };
+  }, [refresh]);
 
   const filteredCourses = courses.filter((course) => {
     const matchesSearch =
       course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPillar = activePillar === 'all' || course.tags?.includes(activePillar);
+    const matchesPillar = activePillar === 'all' || course.pillar === activePillar;
     return matchesSearch && matchesPillar;
   });
 
-  const enrollmentMap = {};
-  enrollments.forEach((e) => {
-    enrollmentMap[e.course_id] = e;
-  });
-
-  const completedCount = enrollments.filter((e) => e.status === 'completed').length;
-  const inProgressCount = enrollments.filter((e) => e.status === 'in_progress').length;
+  const completedCount = courses.filter((c) =>
+    academyStore.isCourseCompleted(userEmail, c)
+  ).length;
+  const inProgressCount = courses.filter((c) => {
+    const pct = academyStore.getCoursePercent(userEmail, c);
+    return pct > 0 && !academyStore.isCourseCompleted(userEmail, c);
+  }).length;
 
   const coursesPerPillar = PILLARS.reduce((acc, p) => {
-    acc[p.tag] = courses.filter((c) => c.tags?.includes(p.tag)).length;
+    acc[p.tag] = courses.filter((c) => c.pillar === p.tag).length;
     return acc;
   }, {});
 
@@ -411,24 +394,13 @@ export default function Academy() {
           </p>
         </div>
 
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-              <div key={i} className="flex flex-col space-y-3">
-                <Skeleton className="h-40 w-full rounded-2xl" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-            ))}
-          </div>
-        ) : filteredCourses.length > 0 ? (
+        {filteredCourses.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredCourses.map((course) => (
               <CourseCard
-                key={course.id}
+                key={course.id + tick}
                 course={course}
-                lessonCount={lessonCounts[course.id] || 0}
-                enrollment={enrollmentMap[course.id]}
+                userEmail={userEmail}
               />
             ))}
           </div>

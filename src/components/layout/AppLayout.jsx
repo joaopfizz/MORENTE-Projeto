@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { createPageUrl } from '@/utils';
 import {
   LayoutDashboard,
@@ -17,6 +18,7 @@ import {
   LifeBuoy,
   UserCog,
 } from 'lucide-react';
+import { demoStore } from '@/lib/paacMockData';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -127,9 +129,18 @@ function JourneyRail({ currentPageName, isOpen }) {
 
 export default function AppLayout({ children, currentPageName }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [user, setUser] = useState(null);
+  const [realUser, setRealUser] = useState(null);
+  const [role, setRole] = useState(demoStore.getRole());
   const [company, setCompany] = useState(DEFAULT_COMPANY);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  // Usuário exibido = usuário real do backend OU o perfil simulado pelo demo
+  const demoUser = demoStore.getCurrentUser();
+  const user = realUser || {
+    ...demoUser,
+    role: role === 'gestor' ? 'super_admin' : 'colaborador',
+  };
 
   useEffect(() => {
     const fetchUserAndCompany = async () => {
@@ -141,7 +152,7 @@ export default function AppLayout({ children, currentPageName }) {
           });
           if (profiles.length > 0) {
             const profile = profiles[0];
-            setUser({ ...currentUser, ...profile });
+            setRealUser({ ...currentUser, ...profile });
             if (profile.company_id) {
               const companyData = await base44.entities.Company.get(
                 profile.company_id
@@ -149,7 +160,7 @@ export default function AppLayout({ children, currentPageName }) {
               if (companyData) setCompany(companyData);
             }
           } else {
-            setUser(currentUser);
+            setRealUser(currentUser);
           }
         }
       } catch (error) {
@@ -157,10 +168,15 @@ export default function AppLayout({ children, currentPageName }) {
       }
     };
     fetchUserAndCompany();
+
+    const handler = (e) => setRole(e.detail);
+    window.addEventListener('paac-role-change', handler);
+    return () => window.removeEventListener('paac-role-change', handler);
   }, []);
 
-  const handleLogout = async () => {
-    await base44.auth.logout();
+  const handleLogout = () => {
+    demoStore.logout();
+    navigate('/Login', { replace: true });
   };
 
   return (
@@ -237,14 +253,27 @@ export default function AppLayout({ children, currentPageName }) {
                   </AvatarFallback>
                 </Avatar>
                 {isSidebarOpen && (
-                  <div className="flex-1 text-left overflow-hidden">
-                    <p className="text-sm font-medium text-white truncate">
-                      {user?.full_name || 'Colaborador'}
-                    </p>
-                    <p className="text-[11px] text-gold-200/70 truncate uppercase tracking-wider">
-                      {user?.role === 'super_admin' ? 'Administrador' : user?.role || 'Membro'}
-                    </p>
-                  </div>
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                      key={user?.email || 'anon'}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 8 }}
+                      transition={{ duration: 0.22, ease: 'easeOut' }}
+                      className="flex-1 text-left overflow-hidden"
+                    >
+                      <p className="text-sm font-medium text-white truncate">
+                        {user?.full_name || 'Colaborador'}
+                      </p>
+                      <p className="text-[11px] text-gold-200/70 truncate uppercase tracking-wider">
+                        {user?.role === 'super_admin'
+                          ? 'Gestor'
+                          : user?.role === 'colaborador'
+                          ? 'Colaborador'
+                          : user?.role || 'Membro'}
+                      </p>
+                    </motion.div>
+                  </AnimatePresence>
                 )}
                 {isSidebarOpen && <ChevronDown className="w-4 h-4 text-ink-400" />}
               </button>
@@ -324,9 +353,18 @@ export default function AppLayout({ children, currentPageName }) {
         </header>
 
         <main className="flex-1 overflow-y-auto scrollbar-thin bg-paper-grid p-6 md:p-8">
-          <div className="max-w-7xl mx-auto space-y-8 pb-10 animate-fade-up">
-            {children}
-          </div>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={`${location.pathname}-${role}`}
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.32, ease: [0.25, 0.1, 0.25, 1] }}
+              className="max-w-7xl mx-auto space-y-8 pb-10"
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

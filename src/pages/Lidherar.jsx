@@ -8,14 +8,25 @@ import {
   Circle,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   MessageSquare,
   ClipboardCheck,
   Users,
   TrendingUp,
+  FlaskConical,
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { calcScore, SCORE_LABEL, PAAC_DEMANDA, PAAC_PDV } from '@/lib/paacConfig';
+import {
+  MOCK_EVALUATIONS,
+  MOCK_REP_PROFILE,
+  MOCK_LEADER_PROFILE,
+  MOCK_TEAM,
+  demoStore,
+} from '@/lib/paacMockData';
 
 const SCORE_COLOR = {
   N: 'bg-rose-100 text-rose-700 border-rose-200',
@@ -97,7 +108,8 @@ function EvaluationCard({ ev, config }) {
     setTasks(updatedTasks);
     setUpdatingTask(true);
     try {
-      await base44.entities.PaacEvaluation.update(ev.id, { tasks: updatedTasks });
+      // Avaliações user-created vão para demoStore; MOCK só atualiza UI local.
+      demoStore.updateEvaluation(ev.id, { tasks: updatedTasks });
     } catch (err) {
       console.error(err);
     } finally {
@@ -250,55 +262,77 @@ function EvaluationCard({ ev, config }) {
 }
 
 export default function Lidherar() {
-  const [user, setUser] = useState(null);
-  const [myProfile, setMyProfile] = useState(null);
-  const [evals, setEvals] = useState([]);
-  const [team, setTeam] = useState([]);
+  const [role, setRole] = useState(demoStore.getRole());
+  const [allEvals, setAllEvals] = useState(demoStore.getEvaluations());
   const [selectedRep, setSelectedRep] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isLeader, setIsLeader] = useState(false);
+  const [direction, setDirection] = useState(0); // -1 = prev, +1 = next (para animação)
+  const isLeader = role === 'gestor';
+  const currentUser = isLeader ? MOCK_LEADER_PROFILE : MOCK_REP_PROFILE;
+  const team = MOCK_TEAM;
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const u = await base44.auth.me();
-        setUser(u);
-        if (!u) return;
+  const currentIndex = selectedRep
+    ? team.findIndex((r) => r.email === selectedRep.email)
+    : 0;
 
-        const [participants, myEvals, myTeam] = await Promise.all([
-          base44.entities.Participant.filter({ email: u.email }),
-          base44.entities.PaacEvaluation.filter({ rep_email: u.email }),
-          base44.entities.Participant.filter({ manager_email: u.email }),
-        ]);
-
-        if (participants.length > 0) setMyProfile(participants[0]);
-        setEvals(myEvals);
-        setTeam(myTeam);
-        setIsLeader(myTeam.length > 0 || u.role === 'super_admin');
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
-
-  const loadRepEvals = async (rep) => {
-    setSelectedRep(rep);
-    try {
-      const repEvals = await base44.entities.PaacEvaluation.filter({
-        rep_email: rep.email,
-      });
-      setEvals(repEvals);
-    } catch (err) {
-      console.error(err);
-    }
+  const goToRep = (dir) => {
+    if (!isLeader) return;
+    const nextIdx = (currentIndex + dir + team.length) % team.length;
+    setDirection(dir);
+    setSelectedRep(team[nextIdx]);
   };
 
-  const currentEvals = evals
-    .filter((e) => e.status === 'completed')
+  const jumpToRep = (rep) => {
+    const nextIdx = team.findIndex((r) => r.email === rep.email);
+    setDirection(nextIdx > currentIndex ? 1 : -1);
+    setSelectedRep(rep);
+  };
+
+  // Atalhos de teclado ← / → (só para gestor)
+  useEffect(() => {
+    if (!isLeader) return;
+    const onKey = (e) => {
+      // Ignora se estiver digitando em input/textarea
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.key === 'ArrowLeft') goToRep(-1);
+      if (e.key === 'ArrowRight') goToRep(1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isLeader, currentIndex]);
+
+  // Gestor começa vendo o primeiro rep do time; colaborador só vê a própria ficha.
+  useEffect(() => {
+    if (isLeader) {
+      setSelectedRep((prev) => prev || team[0]);
+    } else {
+      setSelectedRep(MOCK_REP_PROFILE);
+    }
+  }, [isLeader]);
+
+  useEffect(() => {
+    const roleHandler = (e) => setRole(e.detail);
+    const evHandler = () => setAllEvals(demoStore.getEvaluations());
+    window.addEventListener('paac-role-change', roleHandler);
+    window.addEventListener('paac-evals-change', evHandler);
+    return () => {
+      window.removeEventListener('paac-role-change', roleHandler);
+      window.removeEventListener('paac-evals-change', evHandler);
+    };
+  }, []);
+
+  const viewingRep = selectedRep || currentUser;
+  const myProfile = viewingRep;
+
+  const currentEvals = allEvals
+    .filter(
+      (e) => e.rep_email === viewingRep.email && e.status === 'completed'
+    )
     .sort((a, b) => new Date(b.evaluation_date) - new Date(a.evaluation_date));
+
+  const isMock = true; // sempre modo demo enquanto não há backend
+  const loading = false;
+  const user = currentUser;
 
   const demandaEvals = currentEvals.filter((e) => e.type === 'demanda');
   const pdvEvals = currentEvals.filter((e) => e.type === 'pdv');
@@ -319,61 +353,121 @@ export default function Lidherar() {
   const displayName =
     selectedRep?.full_name || myProfile?.full_name || user?.full_name || 'Colaborador';
 
+  const heroVariants = {
+    enter: (dir) => ({ opacity: 0, x: dir > 0 ? 60 : -60 }),
+    center: { opacity: 1, x: 0 },
+    exit: (dir) => ({ opacity: 0, x: dir > 0 ? -60 : 60 }),
+  };
+
   return (
     <div className="space-y-8">
       {/* HERO */}
       <section className="relative overflow-hidden rounded-3xl bg-ink-grid text-white shadow-ink">
-        <div className="absolute -top-20 -right-10 h-64 w-64 rounded-full bg-gold-400/15 blur-3xl" />
-        <div className="relative px-7 py-8 lg:px-10 lg:py-10 grid lg:grid-cols-[1fr_auto] gap-6 items-center">
-          <div className="space-y-3">
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-500/15 border border-gold-400/30">
-              <Users className="w-3.5 h-3.5 text-gold-300" />
-              <span className="text-[11px] uppercase tracking-[0.2em] text-gold-200 font-semibold">
-                Etapa 2 · Desenvolvimento
+        <div className="absolute -top-20 -right-10 h-64 w-64 rounded-full bg-gold-400/15 blur-3xl pointer-events-none" />
+
+        {/* Setas laterais (somente gestor) */}
+        {isLeader && team.length > 1 && (
+          <>
+            <button
+              onClick={() => goToRep(-1)}
+              aria-label="Colaborador anterior"
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-white/5 hover:bg-gold-400 hover:text-ink-900 border border-white/15 hover:border-gold-400 text-white backdrop-blur flex items-center justify-center transition-all"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => goToRep(1)}
+              aria-label="Próximo colaborador"
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-white/5 hover:bg-gold-400 hover:text-ink-900 border border-white/15 hover:border-gold-400 text-white backdrop-blur flex items-center justify-center transition-all"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+            {/* Indicador "n de N" no topo direito */}
+            <div className="absolute top-4 right-4 z-10 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] font-semibold text-gold-200 uppercase tracking-widest backdrop-blur">
+              {currentIndex + 1} de {team.length}
+            </div>
+          </>
+        )}
+
+        <AnimatePresence mode="wait" initial={false} custom={direction}>
+          <motion.div
+            key={viewingRep.email}
+            custom={direction}
+            variants={heroVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.32, ease: [0.25, 0.1, 0.25, 1] }}
+            className={`relative px-7 py-8 lg:px-16 lg:py-10 grid lg:grid-cols-[1fr_auto] gap-6 items-center ${
+              isLeader ? 'lg:px-20' : ''
+            }`}
+          >
+            <div className="space-y-3">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-500/15 border border-gold-400/30">
+                <Users className="w-3.5 h-3.5 text-gold-300" />
+                <span className="text-[11px] uppercase tracking-[0.2em] text-gold-200 font-semibold">
+                  Etapa 2 · Desenvolvimento
+                </span>
               </span>
-            </span>
-            <h1 className="font-display text-3xl lg:text-4xl font-semibold">
-              Ficha de{' '}
-              <span className="text-gold-300">
-                {selectedRep ? selectedRep.full_name.split(' ')[0] : displayName.split(' ')[0]}
-              </span>
-            </h1>
-            <p className="text-ink-200 max-w-lg leading-relaxed">
-              Histórico de acompanhamentos de campo (PAAC), tarefas geradas e combinados registrados pelo gestor.
-            </p>
-          </div>
-          <div className="flex gap-4 flex-wrap">
-            <div className="rounded-2xl bg-white/5 border border-white/10 px-5 py-4 text-center">
-              <p className="font-display text-3xl font-semibold text-gold-300 tabular-nums">
-                {currentEvals.length}
-              </p>
-              <p className="text-[10px] uppercase tracking-[0.18em] text-ink-300 mt-1">
-                avaliações
+              <h1 className="font-display text-3xl lg:text-4xl font-semibold">
+                Ficha de{' '}
+                <span className="text-gold-300">
+                  {selectedRep ? selectedRep.full_name.split(' ')[0] : displayName.split(' ')[0]}
+                </span>
+              </h1>
+              <p className="text-ink-200 max-w-lg leading-relaxed">
+                {viewingRep.position || 'Representante'}
+                {viewingRep.team ? ` · ${viewingRep.team}` : ''}
               </p>
             </div>
-            {overallScore !== null && (
-              <div className="rounded-2xl bg-gold-shine px-5 py-4 text-center">
-                <p className="font-display text-3xl font-semibold text-ink-900 tabular-nums">
-                  {overallScore}%
-                </p>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-ink-900/70 mt-1">
-                  média geral
-                </p>
-              </div>
-            )}
-            {totalTasks > 0 && (
+            <div className="flex gap-4 flex-wrap">
               <div className="rounded-2xl bg-white/5 border border-white/10 px-5 py-4 text-center">
-                <p className="font-display text-3xl font-semibold text-white tabular-nums">
-                  {doneTasks}/{totalTasks}
+                <p className="font-display text-3xl font-semibold text-gold-300 tabular-nums">
+                  {currentEvals.length}
                 </p>
                 <p className="text-[10px] uppercase tracking-[0.18em] text-ink-300 mt-1">
-                  tarefas
+                  avaliações
                 </p>
               </div>
-            )}
+              {overallScore !== null && (
+                <div className="rounded-2xl bg-gold-shine px-5 py-4 text-center">
+                  <p className="font-display text-3xl font-semibold text-ink-900 tabular-nums">
+                    {overallScore}%
+                  </p>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-ink-900/70 mt-1">
+                    média geral
+                  </p>
+                </div>
+              )}
+              {totalTasks > 0 && (
+                <div className="rounded-2xl bg-white/5 border border-white/10 px-5 py-4 text-center">
+                  <p className="font-display text-3xl font-semibold text-white tabular-nums">
+                    {doneTasks}/{totalTasks}
+                  </p>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-ink-300 mt-1">
+                    tarefas
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </section>
+
+      {/* DEMO BANNER */}
+      {isMock && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4">
+          <FlaskConical className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-amber-800">Modo demonstração</p>
+            <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
+              {isLeader
+                ? 'Você está como Gestor — pode visualizar a ficha de qualquer colaborador do seu time. Avaliações criadas no Scanner aparecem aqui automaticamente.'
+                : 'Você está como Colaborador — vê apenas a sua própria ficha. Clique em "Gestor" no topo para alternar a visão.'}
+            </p>
           </div>
         </div>
-      </section>
+      )}
 
       {/* LEADER: team selector */}
       {isLeader && team.length > 0 && (
@@ -382,23 +476,10 @@ export default function Lidherar() {
             Visualizar ficha de
           </p>
           <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => {
-                setSelectedRep(null);
-                base44.entities.PaacEvaluation.filter({ rep_email: user.email }).then(setEvals);
-              }}
-              className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-all ${
-                !selectedRep
-                  ? 'bg-ink-900 text-white border-ink-900'
-                  : 'bg-white text-ink-600 border-ink-200 hover:border-ink-400'
-              }`}
-            >
-              Minha ficha
-            </button>
             {team.map((rep) => (
               <button
                 key={rep.id}
-                onClick={() => loadRepEvals(rep)}
+                onClick={() => jumpToRep(rep)}
                 className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-all ${
                   selectedRep?.id === rep.id
                     ? 'bg-gold-400 text-ink-900 border-gold-400 shadow-gold'
@@ -417,11 +498,11 @@ export default function Lidherar() {
         <div className="bg-white rounded-2xl border border-dashed border-ink-200 p-12 text-center">
           <ClipboardCheck className="w-12 h-12 text-ink-200 mx-auto mb-4" />
           <h3 className="font-display text-lg font-semibold text-ink-900">
-            Nenhuma avaliação registrada
+            Nenhuma avaliação registrada para {viewingRep.full_name.split(' ')[0]}
           </h3>
           <p className="text-ink-500 text-sm mt-2 max-w-sm mx-auto">
             {isLeader
-              ? 'Vá ao Scanner para preencher o PAAC do representante e gerar a ficha.'
+              ? 'Vá ao Scanner e preencha o PAAC deste representante para gerar a ficha.'
               : 'Seu gestor ainda não registrou nenhuma avaliação de campo para você.'}
           </p>
           {isLeader && (
