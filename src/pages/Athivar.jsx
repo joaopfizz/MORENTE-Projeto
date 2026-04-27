@@ -1,27 +1,25 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Trophy,
   Flame,
-  Medal,
-  Crown,
-  Star,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  Target,
   Sparkles,
   Calendar,
   Send,
-  ThumbsUp,
-  RotateCcw,
+  Heart,
+  MessageCircle,
   Plus,
   Users,
-  BookOpen,
-  ChevronRight,
-  Upload,
+  ChevronLeft,
+  ImagePlus,
   ShieldCheck,
-  ExternalLink,
-  Zap,
+  Check,
+  RotateCcw,
+  Clock,
+  X,
+  Inbox,
+  Smile,
+  Target,
+  TrendingUp,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -35,16 +33,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { demoStore, MOCK_TEAM } from '@/lib/paacMockData';
-import { athivarStore, DIFFICULTY } from '@/lib/athivarMockData';
+import { athivarStore } from '@/lib/athivarMockData';
 import { evolutionStore } from '@/lib/evolutionMockData';
-import { MOCK_COURSES } from '@/lib/academyMockData';
 
 // ============================================================
 // HELPERS
 // ============================================================
 
-function formatDate(iso) {
+const fmtDate = (iso) => {
   if (!iso) return '—';
   try {
     return new Date(iso).toLocaleDateString('pt-BR', {
@@ -54,190 +52,53 @@ function formatDate(iso) {
   } catch {
     return iso;
   }
-}
+};
 
-function formatFullDate(iso) {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
-  } catch {
-    return iso;
-  }
-}
+const fmtRelative = (iso) => {
+  if (!iso) return '';
+  const ms = Date.now() - new Date(iso).getTime();
+  const sec = Math.floor(ms / 1000);
+  if (sec < 60) return 'agora';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `há ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `há ${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `há ${d}d`;
+  return fmtDate(iso);
+};
 
-function daysUntil(deadline) {
-  if (!deadline) return null;
-  const diff = new Date(deadline) - new Date();
-  return Math.ceil(diff / 86400000);
-}
-
-const INITIALS = (name = '') =>
-  name
+const initials = (name) =>
+  (name || '?')
     .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
     .map((p) => p[0])
+    .slice(0, 2)
     .join('')
     .toUpperCase();
 
-const DIFFICULTY_STYLE = {
-  easy: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  medium: 'bg-gold-100 text-gold-800 border-gold-300',
-  hard: 'bg-rose-100 text-rose-800 border-rose-200',
-};
-
-const STATUS_STYLE = {
-  active: {
-    label: 'Ativa',
-    icon: Zap,
-    text: 'text-amber-700',
-    bg: 'bg-amber-50',
-    border: 'border-amber-200',
-    accent: 'bg-amber-500',
-  },
-  pending_validation: {
-    label: 'Aguardando validação',
-    icon: ShieldCheck,
-    text: 'text-violet-700',
-    bg: 'bg-violet-50',
-    border: 'border-violet-200',
-    accent: 'bg-violet-500',
-  },
-  completed: {
-    label: 'Concluída',
-    icon: CheckCircle2,
-    text: 'text-emerald-700',
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-200',
-    accent: 'bg-emerald-500',
-  },
-  needs_rework: {
-    label: 'Ajustes solicitados',
-    icon: AlertCircle,
-    text: 'text-rose-700',
-    bg: 'bg-rose-50',
-    border: 'border-rose-200',
-    accent: 'bg-rose-500',
-  },
-};
+const fileToDataUrl = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 
 // ============================================================
-// UI BITS
+// SECTION HEADER
 // ============================================================
 
-function Avatar({ name, size = 'md', ring = false, podium = null }) {
-  const sizes = {
-    xs: 'w-7 h-7 text-[9px]',
-    sm: 'w-9 h-9 text-[10px]',
-    md: 'w-11 h-11 text-xs',
-    lg: 'w-14 h-14 text-sm',
-    xl: 'w-20 h-20 text-lg',
-  };
-  const ringColors = {
-    1: 'ring-gold-400',
-    2: 'ring-slate-300',
-    3: 'ring-amber-400',
-  };
+function SectionHeader({ eyebrow, title, subtitle, action }) {
   return (
-    <div
-      className={`${sizes[size]} rounded-full bg-gradient-to-br from-ink-700 to-ink-900 text-gold-300 font-display font-semibold flex items-center justify-center shadow-soft ${
-        ring ? `ring-2 ring-offset-2 ring-offset-paper-50 ${podium ? ringColors[podium] : 'ring-gold-400'}` : ''
-      }`}
-    >
-      {INITIALS(name)}
-    </div>
-  );
-}
-
-function StatusPill({ status, size = 'md' }) {
-  const cfg = STATUS_STYLE[status];
-  if (!cfg) return null;
-  const Icon = cfg.icon;
-  const sizeClass = size === 'sm' ? 'text-[10px] px-2 py-0.5' : 'text-[11px] px-2.5 py-1';
-  return (
-    <span
-      className={`inline-flex items-center gap-1 font-semibold rounded-full border ${cfg.bg} ${cfg.text} ${cfg.border} ${sizeClass}`}
-    >
-      <Icon className="w-3 h-3" />
-      {cfg.label}
-    </span>
-  );
-}
-
-function DifficultyPill({ difficulty, size = 'md' }) {
-  const diff = DIFFICULTY[difficulty];
-  if (!diff) return null;
-  const sizeClass = size === 'sm' ? 'text-[10px] px-2 py-0.5' : 'text-[11px] px-2.5 py-1';
-  return (
-    <span
-      className={`inline-flex items-center gap-1 font-semibold rounded-full border ${DIFFICULTY_STYLE[difficulty]} ${sizeClass}`}
-    >
-      <Flame className="w-3 h-3" />
-      {diff.label} · {diff.points} pts
-    </span>
-  );
-}
-
-function PointsBadge({ points, size = 'md', prefix = '+' }) {
-  const sizeClass = size === 'sm' ? 'text-[11px] px-2 py-0.5' : 'text-sm px-3 py-1';
-  return (
-    <span
-      className={`inline-flex items-center gap-1 font-display font-semibold rounded-full bg-gold-shine text-ink-900 ${sizeClass}`}
-    >
-      <Star className="w-3.5 h-3.5 fill-ink-900" />
-      {prefix}
-      {points} pts
-    </span>
-  );
-}
-
-function DeadlinePill({ deadline, size = 'md' }) {
-  if (!deadline) return null;
-  const days = daysUntil(deadline);
-  const late = days < 0;
-  const urgent = days >= 0 && days <= 7;
-  const sizeClass = size === 'sm' ? 'text-[10px] px-2 py-0.5' : 'text-[11px] px-2.5 py-1';
-  const tone = late
-    ? 'bg-rose-100 text-rose-800 border-rose-200'
-    : urgent
-      ? 'bg-amber-100 text-amber-800 border-amber-200'
-      : 'bg-ink-50 text-ink-700 border-ink-200';
-  const text = late
-    ? `Atrasada (${Math.abs(days)}d)`
-    : days === 0
-      ? 'Vence hoje'
-      : `${days}d restantes`;
-  return (
-    <span
-      className={`inline-flex items-center gap-1 font-semibold rounded-full border ${tone} ${sizeClass}`}
-    >
-      <Clock className="w-3 h-3" />
-      {text}
-    </span>
-  );
-}
-
-function SectionHeader({ eyebrow, title, action, count }) {
-  return (
-    <div className="flex items-end justify-between mb-4">
+    <div className="flex items-end justify-between gap-4 flex-wrap">
       <div>
-        {eyebrow && (
-          <p className="text-[10px] uppercase tracking-[0.22em] text-gold-700 font-semibold">
-            {eyebrow}
-          </p>
-        )}
-        <h3 className="font-display text-lg font-semibold text-ink-900 mt-0.5 flex items-center gap-2">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold-700">
+          {eyebrow}
+        </p>
+        <h2 className="font-display text-2xl font-bold text-ink-900 mt-1 tracking-tight">
           {title}
-          {count != null && (
-            <span className="text-xs font-medium text-ink-400 bg-ink-100 rounded-full px-2 py-0.5">
-              {count}
-            </span>
-          )}
-        </h3>
+        </h2>
+        {subtitle && <p className="text-sm text-ink-500 mt-1">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -245,491 +106,565 @@ function SectionHeader({ eyebrow, title, action, count }) {
 }
 
 // ============================================================
-// LEADERBOARD — PÓDIO
+// HERO
 // ============================================================
 
-function PodiumPlace({ row, place, isCurrent }) {
-  const heights = { 1: 'h-36', 2: 'h-28', 3: 'h-24' };
-  const styles = {
-    1: 'bg-gold-shine text-ink-900 border-gold-400',
-    2: 'bg-gradient-to-b from-slate-100 to-slate-200 text-ink-900 border-slate-300',
-    3: 'bg-gradient-to-b from-amber-100 to-amber-200 text-ink-900 border-amber-300',
-  };
-  const icons = {
-    1: <Crown className="w-5 h-5" />,
-    2: <Medal className="w-5 h-5" />,
-    3: <Medal className="w-5 h-5" />,
-  };
+function Hero({ role, challenges, pendingCount, onCreateChallenge }) {
+  const activeCount = challenges.filter((c) => c.status === 'active').length;
 
   return (
-    <div className="flex flex-col items-center flex-1 max-w-[180px]">
-      {/* Avatar */}
-      <div className="relative mb-2">
-        <Avatar name={row.rep.full_name} size="lg" ring podium={place} />
-        <div className="absolute -top-2 -right-2 bg-white rounded-full w-7 h-7 flex items-center justify-center shadow-soft border border-ink-100">
-          <span className="text-[11px] font-display font-bold text-ink-900">
-            {place}º
-          </span>
-        </div>
-      </div>
+    <div className="relative overflow-hidden rounded-2xl bg-ink-grid text-white p-8 md:p-10 shadow-2xl">
+      <div className="absolute inset-0 bg-gradient-to-br from-gold-500/10 via-transparent to-transparent pointer-events-none" />
 
-      {/* Name */}
-      <p className="font-display text-sm font-semibold text-ink-900 text-center leading-tight">
-        {row.rep.full_name}
-      </p>
-      {isCurrent && (
-        <span className="text-[9px] uppercase tracking-[0.18em] text-gold-700 font-bold mt-0.5">
-          Você
-        </span>
-      )}
-
-      {/* Podium block */}
-      <div
-        className={`${heights[place]} ${styles[place]} mt-2 w-full rounded-t-2xl border-2 border-b-0 flex flex-col items-center justify-center px-3`}
-      >
-        <div className="flex items-center gap-1 mb-0.5">{icons[place]}</div>
-        <p className="font-display text-2xl font-bold tabular-nums leading-none">
-          {row.points}
-        </p>
-        <p className="text-[10px] uppercase tracking-wider opacity-75 mt-0.5">
-          pontos
-        </p>
-        <p className="text-[10px] mt-1">
-          {row.completed} missão{row.completed !== 1 ? 'ões' : ''}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function Podium({ leaderboard, currentEmail }) {
-  // Top 3 — reordenar pra mostrar 2-1-3 visualmente
-  const sorted = [...leaderboard].slice(0, 3);
-  const getByRank = (r) => sorted.find((x) => x.rank === r);
-  const first = getByRank(1);
-  const second = getByRank(2);
-  const third = getByRank(3);
-  const visualOrder = [second, first, third].filter(Boolean);
-
-  return (
-    <div className="flex items-end justify-center gap-3 pb-0">
-      {visualOrder.map((row) => (
-        <PodiumPlace
-          key={row.rep.email}
-          row={row}
-          place={row.rank}
-          isCurrent={row.rep.email === currentEmail}
-        />
-      ))}
-    </div>
-  );
-}
-
-function LeaderboardList({ leaderboard, currentEmail }) {
-  return (
-    <div className="bg-white rounded-2xl border border-ink-100 overflow-hidden">
-      <div className="px-5 py-3 border-b border-ink-100 flex items-center justify-between">
-        <p className="font-display font-semibold text-sm text-ink-900">
-          Classificação completa
-        </p>
-        <p className="text-[11px] text-ink-500">Pontos acumulados no ciclo</p>
-      </div>
-      <ul className="divide-y divide-ink-100">
-        {leaderboard.map((row) => {
-          const isMe = row.rep.email === currentEmail;
-          const rankBg =
-            row.rank === 1
-              ? 'bg-gold-shine text-ink-900'
-              : row.rank === 2
-                ? 'bg-slate-200 text-ink-900'
-                : row.rank === 3
-                  ? 'bg-amber-200 text-ink-900'
-                  : 'bg-ink-50 text-ink-700';
-          return (
-            <li
-              key={row.rep.email}
-              className={`px-5 py-3 flex items-center gap-4 transition ${
-                isMe ? 'bg-gold-50' : ''
-              }`}
-            >
-              <span
-                className={`w-8 h-8 rounded-lg ${rankBg} font-display font-bold text-sm flex items-center justify-center shrink-0`}
-              >
-                {row.rank}
-              </span>
-              <Avatar name={row.rep.full_name} size="sm" />
-              <div className="flex-1 min-w-0">
-                <p className="font-display font-semibold text-sm text-ink-900 truncate">
-                  {row.rep.full_name}
-                  {isMe && (
-                    <span className="text-[9px] uppercase tracking-wider text-gold-700 font-bold ml-2">
-                      você
-                    </span>
-                  )}
-                </p>
-                <p className="text-[11px] text-ink-500 truncate">{row.rep.team}</p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="font-display text-lg font-semibold text-ink-900 tabular-nums leading-none">
-                  {row.points}
-                </p>
-                <p className="text-[10px] text-ink-500 uppercase tracking-wider mt-0.5">
-                  {row.completed} feitas · {row.active} ativas
-                </p>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
-
-// ============================================================
-// MISSION CARD
-// ============================================================
-
-function MissionCard({ mission, actions, onClick, compact = false, showRep = false }) {
-  const late = mission.deadline && daysUntil(mission.deadline) < 0;
-  return (
-    <div
-      className={`bg-white rounded-2xl border ${
-        late && mission.status === 'active'
-          ? 'border-rose-200'
-          : 'border-ink-100'
-      } ${onClick ? 'hover:border-ink-300 hover:shadow-soft cursor-pointer' : ''} transition-all p-5 flex flex-col gap-3`}
-      onClick={onClick}
-    >
-      <div className="flex items-start gap-3">
-        {showRep && (
-          <Avatar name={mission.rep_name} size="md" />
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <StatusPill status={mission.status} size="sm" />
-            <DifficultyPill difficulty={mission.difficulty} size="sm" />
-            {mission.status === 'active' && (
-              <DeadlinePill deadline={mission.deadline} size="sm" />
-            )}
-            {mission.source === 'paac' && mission.paac_criteria_key && (
-              <span className="text-[10px] font-mono bg-ink-100 text-ink-700 px-1.5 py-0.5 rounded">
-                PAAC {mission.paac_criteria_key}
-              </span>
-            )}
-          </div>
-          <p className="font-display font-semibold text-ink-900 leading-snug">
-            {mission.title}
+      <div className="relative flex flex-wrap items-start justify-between gap-6">
+        <div className="max-w-2xl">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold-300/80">
+            Etapa 4 · Athivar
           </p>
-          {showRep && (
-            <p className="text-xs text-ink-500 mt-0.5">
-              {mission.rep_name} · {mission.rep_email.split('@')[0]}
-            </p>
-          )}
-          {!compact && (
-            <p className="text-xs text-ink-600 mt-1.5 line-clamp-2 leading-relaxed">
-              {mission.description}
-            </p>
-          )}
+          <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mt-2 leading-tight">
+            Desafios coletivos que viram histórias para o time inteiro.
+          </h1>
+          <p className="text-ink-200/80 mt-3 text-sm leading-relaxed">
+            Lance um desafio, todo mundo executa em campo e posta o resultado.
+            O gestor aprova antes de publicar no feed — depois é só vibrar com o time.
+          </p>
         </div>
-        {mission.status === 'completed' && (
-          <div className="text-right shrink-0">
-            <PointsBadge points={mission.points_awarded} size="sm" />
-            {mission.on_time_bonus && (
-              <p className="text-[10px] text-emerald-700 font-semibold mt-1">
-                +20% bônus
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 backdrop-blur min-w-[140px]">
+            <div className="flex items-center gap-2 text-gold-300/80">
+              <Flame className="w-3.5 h-3.5" />
+              <p className="text-[10px] uppercase tracking-wider font-semibold">
+                Desafios ativos
               </p>
-            )}
+            </div>
+            <p className="font-display text-2xl font-bold text-white mt-1">
+              {activeCount}
+            </p>
           </div>
-        )}
-      </div>
-      {actions && <div className="flex items-center gap-2 pt-2">{actions}</div>}
-    </div>
-  );
-}
-
-// ============================================================
-// CANDIDATE CARD (tasks PAAC que viram missões)
-// ============================================================
-
-function CandidateCard({ candidate, onActivate, showRep = false }) {
-  return (
-    <div className="bg-white rounded-2xl border-2 border-dashed border-ink-200 p-5 flex flex-col gap-3 hover:border-gold-400 transition-all">
-      <div className="flex items-start gap-3">
-        {showRep && <Avatar name={candidate.rep_name} size="md" />}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gold-50 border border-gold-200 text-gold-800">
-              <Sparkles className="w-3 h-3" /> Candidata da PAAC
-            </span>
-            <span className="text-[10px] font-mono bg-ink-100 text-ink-700 px-1.5 py-0.5 rounded">
-              {candidate.paac_criteria_key}
-            </span>
-            <span className="text-[10px] text-ink-500">
-              {formatDate(candidate.evaluation_date)}
-            </span>
-          </div>
-          <p className="font-display font-semibold text-ink-900 leading-snug text-sm">
-            {candidate.paac_criteria_label}
-          </p>
-          <p className="text-[11px] text-ink-500 mt-0.5">
-            {candidate.section_label}
-            {showRep && ` · ${candidate.rep_name}`}
-          </p>
-          {candidate.suggested_course && (
-            <div className="mt-2 flex items-center gap-1.5 text-[11px] text-sky-700">
-              <BookOpen className="w-3 h-3" />
-              Curso sugerido: <span className="font-semibold">{candidate.suggested_course.title}</span>
+          {role === 'gestor' && (
+            <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 backdrop-blur min-w-[140px]">
+              <div className="flex items-center gap-2 text-gold-300/80">
+                <Inbox className="w-3.5 h-3.5" />
+                <p className="text-[10px] uppercase tracking-wider font-semibold">
+                  Pra aprovar
+                </p>
+              </div>
+              <p className="font-display text-2xl font-bold text-white mt-1">
+                {pendingCount}
+              </p>
             </div>
           )}
         </div>
       </div>
-      <Button
-        onClick={() => onActivate(candidate)}
-        className="bg-ink-900 hover:bg-ink-800 text-gold-200 w-full gap-1.5"
-        size="sm"
-      >
-        <Zap className="w-4 h-4" /> Ativar missão
-      </Button>
+
+      {role === 'gestor' && (
+        <div className="relative mt-6">
+          <Button
+            onClick={onCreateChallenge}
+            className="bg-gold-shine text-ink-900 hover:opacity-90 font-semibold gap-2 shadow-gold"
+          >
+            <Plus className="w-4 h-4" />
+            Lançar novo desafio
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
 
 // ============================================================
-// DIALOG — ATIVAR MISSÃO (a partir de candidata ou manual)
+// CHALLENGE CARD
 // ============================================================
 
-function MissionConfigDialog({
-  open,
-  onClose,
-  onSubmit,
-  candidate = null, // se vier, é ativação
-  defaultRep = null,
-  mode = 'activate',
-}) {
-  const isManual = mode === 'manual';
-  const defaultCourseId = candidate?.suggested_course?.id || '';
+function ChallengeCard({ challenge, metrics, onClick }) {
+  const isClosed = challenge.status === 'closed';
+  return (
+    <button
+      onClick={onClick}
+      className="group text-left bg-white border border-ink-100 rounded-2xl p-5 shadow-sm hover:shadow-soft hover:border-gold-300 transition-all"
+    >
+      <div className="flex items-start gap-3">
+        <div className="text-3xl shrink-0">{challenge.cover_emoji || '🎯'}</div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                isClosed
+                  ? 'bg-ink-100 text-ink-500'
+                  : 'bg-amber-100 text-amber-700'
+              }`}
+            >
+              {isClosed ? 'Encerrado' : 'Ativo'}
+            </span>
+            <span className="text-[11px] text-ink-400 flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              até {fmtDate(challenge.deadline)}
+            </span>
+          </div>
+          <h3 className="font-display text-base font-semibold text-ink-900 mt-2 leading-snug line-clamp-2">
+            {challenge.title}
+          </h3>
+        </div>
+      </div>
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [objective, setObjective] = useState('');
-  const [successCriteria, setSuccessCriteria] = useState('');
-  const [difficulty, setDifficulty] = useState('medium');
-  const [deadline, setDeadline] = useState('');
-  const [suggestedCourseId, setSuggestedCourseId] = useState(defaultCourseId);
-  const [repEmail, setRepEmail] = useState(defaultRep || '');
+      <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-ink-100">
+        <Metric icon={Users} value={metrics.participants_count} label="reps" />
+        <Metric icon={MessageCircle} value={metrics.posts_count} label="posts" />
+        <Metric
+          icon={TrendingUp}
+          value={metrics.sum_value}
+          label={challenge.metric_unit || 'total'}
+        />
+      </div>
+    </button>
+  );
+}
 
-  // Reinitialize when opened
-  useEffect(() => {
-    if (!open) return;
-    if (candidate) {
-      setTitle(`Desenvolver: ${candidate.paac_criteria_label.split(' —')[0]}`);
-      setDescription(
-        `A partir do combinado na PAAC de ${formatFullDate(candidate.evaluation_date)} no critério ${candidate.paac_criteria_key}, o colaborador vai trabalhar para passar de "${candidate.current_status === 'em_andamento' ? 'em andamento' : 'pendente'}" para Atende/Supera.`
-      );
-      setObjective('');
-      setSuccessCriteria('');
-      setDifficulty('medium');
-      setDeadline(() => {
-        const d = new Date();
-        d.setDate(d.getDate() + 30);
-        return d.toISOString().slice(0, 10);
-      });
-      setSuggestedCourseId(candidate.suggested_course?.id || '');
-      setRepEmail(candidate.rep_email);
-    } else {
-      setTitle('');
-      setDescription('');
-      setObjective('');
-      setSuccessCriteria('');
-      setDifficulty('medium');
-      setDeadline(() => {
-        const d = new Date();
-        d.setDate(d.getDate() + 30);
-        return d.toISOString().slice(0, 10);
-      });
-      setSuggestedCourseId('');
-      setRepEmail(defaultRep || MOCK_TEAM[0].email);
-    }
-  }, [open, candidate, defaultRep]);
+function Metric({ icon: Icon, value, label }) {
+  return (
+    <div className="text-center">
+      <div className="flex items-center justify-center gap-1 text-ink-400">
+        <Icon className="w-3 h-3" />
+        <span className="text-[10px] uppercase tracking-wider font-semibold">
+          {label}
+        </span>
+      </div>
+      <p className="font-display text-lg font-bold text-ink-900 mt-0.5 leading-none">
+        {value}
+      </p>
+    </div>
+  );
+}
 
-  const canSubmit = title.trim() && description.trim() && deadline && repEmail;
+// ============================================================
+// POST CARD
+// ============================================================
 
-  const handleSubmit = () => {
-    if (!canSubmit) return;
-    const config = {
-      title: title.trim(),
-      description: description.trim(),
-      objective: objective.trim(),
-      success_criteria: successCriteria.trim(),
-      difficulty,
-      deadline,
-      suggested_course_id: suggestedCourseId || null,
-      rep_email: repEmail,
-    };
-    onSubmit(config);
+function PostCard({ post, currentEmail, onLike, onComment, statusBadge, footerExtra }) {
+  const liked = post.likes.includes(currentEmail);
+  const [showCommentBox, setShowCommentBox] = useState(false);
+  const [commentText, setCommentText] = useState('');
+
+  const submitComment = () => {
+    if (!commentText.trim()) return;
+    onComment?.(post, commentText.trim());
+    setCommentText('');
+    setShowCommentBox(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <article className="bg-white border border-ink-100 rounded-2xl shadow-sm overflow-hidden">
+      {/* Header */}
+      <header className="flex items-center justify-between p-4 border-b border-ink-50">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-10 w-10 border border-gold-200">
+            <AvatarFallback className="bg-ink-900 text-gold-200 font-semibold text-xs">
+              {initials(post.author_name)}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="text-sm font-semibold text-ink-900 leading-tight">
+              {post.author_name}
+            </p>
+            <p className="text-[11px] text-ink-400">
+              {post.author_team} · {fmtRelative(post.created_at)}
+            </p>
+          </div>
+        </div>
+        {statusBadge}
+      </header>
+
+      {/* Body */}
+      <div className="p-4 space-y-3 text-sm">
+        <Block label="Situação" text={post.situacao} />
+        <Block label="Objetivo" text={post.objetivo} />
+        <Block label="Resultado" text={post.resultado} accent />
+        {post.result_value != null && (
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
+            <TrendingUp className="w-3.5 h-3.5" />
+            {post.result_value} {post.challenge_unit || ''}
+          </div>
+        )}
+      </div>
+
+      {/* Image */}
+      {post.image_url && (
+        <div className="bg-ink-50">
+          <img
+            src={post.image_url}
+            alt="evidência"
+            className="w-full max-h-96 object-cover"
+            loading="lazy"
+          />
+        </div>
+      )}
+
+      {/* Reactions footer */}
+      <footer className="border-t border-ink-50">
+        {post.status === 'published' && (
+          <div className="flex items-center gap-1 px-2 py-1.5">
+            <button
+              onClick={() => onLike?.(post)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+                liked
+                  ? 'text-rose-600 bg-rose-50 hover:bg-rose-100'
+                  : 'text-ink-500 hover:bg-paper-100'
+              }`}
+            >
+              <Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
+              <span className="font-semibold">{post.likes.length}</span>
+            </button>
+            <button
+              onClick={() => setShowCommentBox((s) => !s)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-ink-500 hover:bg-paper-100 transition-colors"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span className="font-semibold">{post.comments.length}</span>
+            </button>
+          </div>
+        )}
+
+        {post.comments.length > 0 && (
+          <div className="px-4 py-3 space-y-2 border-t border-ink-50 bg-paper-50/50">
+            {post.comments.map((c, i) => (
+              <div key={i} className="flex items-start gap-2 text-sm">
+                <Avatar className="h-7 w-7 shrink-0">
+                  <AvatarFallback className="bg-ink-100 text-ink-700 text-[10px] font-semibold">
+                    {initials(c.author_name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 bg-white rounded-xl px-3 py-2 border border-ink-100">
+                  <p className="text-xs font-semibold text-ink-900">
+                    {c.author_name}
+                    <span className="text-[10px] text-ink-400 font-normal ml-2">
+                      {fmtRelative(c.created_at)}
+                    </span>
+                  </p>
+                  <p className="text-sm text-ink-700 mt-0.5">{c.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {showCommentBox && post.status === 'published' && (
+          <div className="p-3 border-t border-ink-50 flex gap-2">
+            <Input
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder="Escreva um comentário…"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  submitComment();
+                }
+              }}
+              autoFocus
+            />
+            <Button onClick={submitComment} size="sm" className="bg-ink-900">
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
+
+        {footerExtra}
+      </footer>
+    </article>
+  );
+}
+
+function Block({ label, text, accent }) {
+  if (!text) return null;
+  return (
+    <div>
+      <p
+        className={`text-[10px] font-semibold uppercase tracking-wider ${
+          accent ? 'text-emerald-700' : 'text-ink-400'
+        }`}
+      >
+        {label}
+      </p>
+      <p className="text-ink-700 mt-0.5 leading-relaxed whitespace-pre-wrap">
+        {text}
+      </p>
+    </div>
+  );
+}
+
+// ============================================================
+// CHALLENGE DETAIL
+// ============================================================
+
+function ChallengeDetail({
+  challenge,
+  posts,
+  metrics,
+  role,
+  currentEmail,
+  onBack,
+  onReport,
+  onLike,
+  onComment,
+}) {
+  const isParticipant = challenge.participants.includes(currentEmail);
+
+  // anexa unit pros posts pra render
+  const decoratedPosts = posts.map((p) => ({
+    ...p,
+    challenge_unit: challenge.metric_unit,
+  }));
+
+  return (
+    <div className="space-y-6">
+      <button
+        onClick={onBack}
+        className="flex items-center gap-1 text-sm text-ink-500 hover:text-ink-900 transition-colors"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        Voltar para todos os desafios
+      </button>
+
+      {/* Header */}
+      <div className="bg-gradient-to-br from-ink-900 to-ink-800 text-white rounded-2xl p-6 md:p-8 shadow-2xl">
+        <div className="flex items-start gap-4">
+          <div className="text-4xl">{challenge.cover_emoji}</div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200">
+                {challenge.status === 'active' ? 'Ativo' : 'Encerrado'}
+              </span>
+              <span className="text-[11px] text-ink-300 flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                até {fmtDate(challenge.deadline)}
+              </span>
+              <span className="text-[11px] text-ink-300 flex items-center gap-1">
+                <ShieldCheck className="w-3 h-3" />
+                criado por {challenge.created_by_name}
+              </span>
+            </div>
+            <h2 className="font-display text-2xl font-bold tracking-tight mt-2">
+              {challenge.title}
+            </h2>
+            <p className="text-ink-200/80 text-sm mt-2 leading-relaxed">
+              {challenge.description}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 mt-6">
+          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-1.5 text-gold-300/80">
+              <Users className="w-3 h-3" />
+              <span className="text-[10px] uppercase tracking-wider font-semibold">
+                Participantes
+              </span>
+            </div>
+            <p className="font-display text-xl font-bold mt-1">
+              {metrics.participants_count}
+              <span className="text-xs text-ink-300 font-normal">
+                {' '}
+                / {challenge.participants.length}
+              </span>
+            </p>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-1.5 text-gold-300/80">
+              <MessageCircle className="w-3 h-3" />
+              <span className="text-[10px] uppercase tracking-wider font-semibold">
+                Posts
+              </span>
+            </div>
+            <p className="font-display text-xl font-bold mt-1">
+              {metrics.posts_count}
+            </p>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-1.5 text-gold-300/80">
+              <TrendingUp className="w-3 h-3" />
+              <span className="text-[10px] uppercase tracking-wider font-semibold">
+                {challenge.metric_label || 'Total'}
+              </span>
+            </div>
+            <p className="font-display text-xl font-bold mt-1">
+              {metrics.sum_value}{' '}
+              <span className="text-xs text-ink-300 font-normal">
+                {challenge.metric_unit}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        {role === 'colaborador' && isParticipant && challenge.status === 'active' && (
+          <div className="mt-6">
+            <Button
+              onClick={() => onReport(challenge)}
+              className="bg-gold-shine text-ink-900 hover:opacity-90 font-semibold gap-2 shadow-gold"
+            >
+              <Plus className="w-4 h-4" />
+              Reportar minha ação
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Feed */}
+      <SectionHeader
+        eyebrow="Feed do desafio"
+        title="Histórias publicadas"
+        subtitle={`${decoratedPosts.length} ${
+          decoratedPosts.length === 1 ? 'post publicado' : 'posts publicados'
+        } pelo time`}
+      />
+
+      {decoratedPosts.length === 0 ? (
+        <EmptyState
+          icon={Smile}
+          title="Nenhum post publicado ainda"
+          message="Seja a primeira pessoa a contar a sua história neste desafio."
+        />
+      ) : (
+        <div className="grid gap-5">
+          {decoratedPosts.map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              currentEmail={currentEmail}
+              onLike={onLike}
+              onComment={onComment}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// EMPTY STATE
+// ============================================================
+
+function EmptyState({ icon: Icon, title, message }) {
+  return (
+    <div className="bg-white border border-dashed border-ink-200 rounded-2xl p-10 text-center">
+      <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-paper-100 text-ink-400 mb-3">
+        <Icon className="w-5 h-5" />
+      </div>
+      <h3 className="font-display text-base font-semibold text-ink-900">
+        {title}
+      </h3>
+      <p className="text-sm text-ink-500 mt-1">{message}</p>
+    </div>
+  );
+}
+
+// ============================================================
+// DIALOGS
+// ============================================================
+
+function NewChallengeDialog({ open, onClose, onCreate }) {
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    deadline: '',
+    metric_label: '',
+    metric_unit: '',
+    cover_emoji: '🎯',
+  });
+
+  useEffect(() => {
+    if (open) {
+      setForm({
+        title: '',
+        description: '',
+        deadline: '',
+        metric_label: '',
+        metric_unit: '',
+        cover_emoji: '🎯',
+      });
+    }
+  }, [open]);
+
+  const submit = () => {
+    if (!form.title.trim()) return;
+    onCreate({
+      ...form,
+      deadline: form.deadline ? new Date(form.deadline).toISOString() : undefined,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="font-display text-xl">
-            {candidate ? 'Ativar missão da PAAC' : 'Criar missão manual'}
-          </DialogTitle>
+          <DialogTitle className="font-display text-xl">Lançar novo desafio</DialogTitle>
           <DialogDescription>
-            {candidate
-              ? `Para: ${candidate.rep_name} · Critério ${candidate.paac_criteria_key}`
-              : 'Defina uma nova missão para alguém do time.'}
+            Defina o desafio que o time vai executar em campo.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5">
-          {isManual && !candidate && (
-            <div>
-              <label className="text-xs font-semibold text-ink-700 uppercase tracking-wider mb-1.5 block">
-                Colaborador
-              </label>
-              <select
-                value={repEmail}
-                onChange={(e) => setRepEmail(e.target.value)}
-                className="w-full border border-ink-200 rounded-lg px-3 py-2 text-sm bg-white focus:border-gold-400 focus:ring-1 focus:ring-gold-400 outline-none"
-              >
-                {MOCK_TEAM.map((r) => (
-                  <option key={r.email} value={r.email}>
-                    {r.full_name} — {r.team}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div>
-            <label className="text-xs font-semibold text-ink-700 uppercase tracking-wider mb-1.5 block">
-              Título
-            </label>
+        <div className="space-y-3">
+          <Field label="Título">
             <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: Dominar o uso do Histórico e Falado pelo Médico"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              placeholder="Ex: Aplicar SPIN no ciclo Catapres"
+              autoFocus
             />
-          </div>
-
-          <div>
-            <label className="text-xs font-semibold text-ink-700 uppercase tracking-wider mb-1.5 block">
-              Descrição
-            </label>
+          </Field>
+          <Field label="Descrição (instruções para o time)">
             <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              placeholder="O que o colaborador precisa fazer exatamente?"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              rows={4}
+              placeholder="O que cada um deve fazer e como reportar."
             />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-ink-700 uppercase tracking-wider mb-1.5 block">
-                Objetivo
-              </label>
-              <Textarea
-                value={objective}
-                onChange={(e) => setObjective(e.target.value)}
-                rows={2}
-                placeholder="Qual a finalidade?"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-ink-700 uppercase tracking-wider mb-1.5 block">
-                Critério de sucesso
-              </label>
-              <Textarea
-                value={successCriteria}
-                onChange={(e) => setSuccessCriteria(e.target.value)}
-                rows={2}
-                placeholder="Como saberemos que foi concluída?"
-              />
-            </div>
-          </div>
-
-          {/* Dificuldade */}
-          <div>
-            <label className="text-xs font-semibold text-ink-700 uppercase tracking-wider mb-1.5 block">
-              Dificuldade (define os pontos-base)
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {Object.entries(DIFFICULTY).map(([key, diff]) => {
-                const active = difficulty === key;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setDifficulty(key)}
-                    className={`relative rounded-xl border-2 p-3 text-left transition-all ${
-                      active
-                        ? 'border-gold-400 bg-gold-50 shadow-soft'
-                        : 'border-ink-200 hover:border-ink-300'
-                    }`}
-                  >
-                    <p className={`font-display font-semibold text-sm ${active ? 'text-ink-900' : 'text-ink-700'}`}>
-                      {diff.label}
-                    </p>
-                    <p className={`text-xs mt-0.5 ${active ? 'text-gold-800 font-semibold' : 'text-ink-500'}`}>
-                      {diff.points} pts base
-                    </p>
-                    {active && (
-                      <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-gold-600" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="text-[11px] text-ink-500 mt-2">
-              💡 Entregar antes do prazo dá +20% de bônus em pontos.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-semibold text-ink-700 uppercase tracking-wider mb-1.5 block">
-                Prazo
-              </label>
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Prazo">
               <Input
                 type="date"
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
+                value={form.deadline}
+                onChange={(e) => setForm({ ...form, deadline: e.target.value })}
               />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-ink-700 uppercase tracking-wider mb-1.5 block">
-                Curso sugerido (Academy)
-              </label>
-              <select
-                value={suggestedCourseId}
-                onChange={(e) => setSuggestedCourseId(e.target.value)}
-                className="w-full border border-ink-200 rounded-lg px-3 py-2 text-sm bg-white focus:border-gold-400 focus:ring-1 focus:ring-gold-400 outline-none"
-              >
-                <option value="">Nenhum</option>
-                {MOCK_COURSES.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.title}
-                  </option>
-                ))}
-              </select>
-            </div>
+            </Field>
+            <Field label="Emoji da capa">
+              <Input
+                value={form.cover_emoji}
+                onChange={(e) => setForm({ ...form, cover_emoji: e.target.value })}
+                maxLength={2}
+              />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Métrica (label)">
+              <Input
+                value={form.metric_label}
+                onChange={(e) => setForm({ ...form, metric_label: e.target.value })}
+                placeholder="Ex: caixas vendidas"
+              />
+            </Field>
+            <Field label="Unidade">
+              <Input
+                value={form.metric_unit}
+                onChange={(e) => setForm({ ...form, metric_unit: e.target.value })}
+                placeholder="Ex: cx"
+                maxLength={6}
+              />
+            </Field>
           </div>
         </div>
 
-        <DialogFooter className="gap-2">
-          <Button variant="ghost" onClick={onClose}>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>
           <Button
-            disabled={!canSubmit}
-            onClick={handleSubmit}
-            className="bg-ink-900 hover:bg-ink-800 text-gold-200 gap-1.5"
+            onClick={submit}
+            disabled={!form.title.trim()}
+            className="bg-ink-900 text-white"
           >
-            <Zap className="w-4 h-4" />
-            {candidate ? 'Ativar missão' : 'Criar missão'}
+            Lançar desafio
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -737,112 +672,231 @@ function MissionConfigDialog({
   );
 }
 
-// ============================================================
-// DIALOG — VALIDAR MISSÃO (gestor)
-// ============================================================
+function Field({ label, children }) {
+  return (
+    <label className="block">
+      <span className="block text-xs font-semibold text-ink-700 mb-1.5">{label}</span>
+      {children}
+    </label>
+  );
+}
 
-function ValidateMissionDialog({ open, mission, onClose, onApprove, onRework }) {
+function NewPostDialog({ open, onClose, challenge, onSubmit, initial }) {
+  const [form, setForm] = useState({
+    situacao: '',
+    objetivo: '',
+    resultado: '',
+    result_value: '',
+    image_url: '',
+  });
+  const fileRef = useRef(null);
+
+  useEffect(() => {
+    if (open) {
+      setForm({
+        situacao: initial?.situacao || '',
+        objetivo: initial?.objetivo || '',
+        resultado: initial?.resultado || '',
+        result_value: initial?.result_value ?? '',
+        image_url: initial?.image_url || '',
+      });
+    }
+  }, [open, initial]);
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 1.5 * 1024 * 1024) {
+      alert('Imagem muito grande para a demo (limite ~1.5MB).');
+      return;
+    }
+    const dataUrl = await fileToDataUrl(file);
+    setForm((f) => ({ ...f, image_url: dataUrl }));
+  };
+
+  const submit = () => {
+    if (!form.situacao.trim() || !form.objetivo.trim() || !form.resultado.trim()) return;
+    onSubmit(form);
+  };
+
+  if (!challenge) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-display text-xl">
+            {initial ? 'Reenviar relato' : 'Reportar minha ação'}
+          </DialogTitle>
+          <DialogDescription>
+            {challenge.cover_emoji} {challenge.title}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <Field label="Situação — O que estava acontecendo?">
+            <Textarea
+              value={form.situacao}
+              onChange={(e) => setForm({ ...form, situacao: e.target.value })}
+              rows={3}
+              placeholder="Contexto da visita / negociação"
+              autoFocus
+            />
+          </Field>
+          <Field label="Objetivo — O que você queria alcançar?">
+            <Textarea
+              value={form.objetivo}
+              onChange={(e) => setForm({ ...form, objetivo: e.target.value })}
+              rows={2}
+              placeholder="Sua meta para a ação"
+            />
+          </Field>
+          <Field label="Resultado — O que aconteceu?">
+            <Textarea
+              value={form.resultado}
+              onChange={(e) => setForm({ ...form, resultado: e.target.value })}
+              rows={3}
+              placeholder="Como você executou e o desfecho"
+            />
+          </Field>
+          {challenge.metric_label && (
+            <Field label={`Resultado em números (${challenge.metric_label})`}>
+              <Input
+                type="number"
+                min={0}
+                value={form.result_value}
+                onChange={(e) => setForm({ ...form, result_value: e.target.value })}
+                placeholder={`Ex: 8 ${challenge.metric_unit}`}
+              />
+            </Field>
+          )}
+
+          <Field label="Foto / evidência (opcional)">
+            <div className="flex items-center gap-3">
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFile}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileRef.current?.click()}
+                className="gap-2"
+              >
+                <ImagePlus className="w-4 h-4" />
+                {form.image_url ? 'Trocar imagem' : 'Adicionar imagem'}
+              </Button>
+              {form.image_url && (
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, image_url: '' })}
+                  className="text-xs text-ink-500 hover:text-rose-600"
+                >
+                  Remover
+                </button>
+              )}
+            </div>
+            {form.image_url && (
+              <img
+                src={form.image_url}
+                alt="preview"
+                className="mt-3 rounded-lg max-h-44 object-cover border border-ink-200"
+              />
+            )}
+          </Field>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={submit}
+            disabled={
+              !form.situacao.trim() || !form.objetivo.trim() || !form.resultado.trim()
+            }
+            className="bg-ink-900 text-white gap-2"
+          >
+            <Send className="w-4 h-4" />
+            Enviar para validação
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ReviewPostDialog({ open, onClose, post, onApprove, onRework }) {
   const [feedback, setFeedback] = useState('');
 
   useEffect(() => {
     if (open) setFeedback('');
-  }, [open, mission?.id]);
+  }, [open]);
 
-  if (!mission) return null;
-
-  const potentialPoints = (() => {
-    const onTime = !mission.deadline || new Date() <= new Date(mission.deadline);
-    return onTime ? Math.round(mission.base_points * 1.2) : mission.base_points;
-  })();
+  if (!post) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="font-display text-xl">Validar missão</DialogTitle>
+          <DialogTitle className="font-display text-xl">Revisar post</DialogTitle>
           <DialogDescription>
-            {mission.rep_name} reportou a conclusão em{' '}
-            {formatFullDate(mission.report?.submitted_at)}.
+            Aprovar publica no feed; pedir ajuste devolve ao colaborador com seu feedback.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Mission header */}
-          <div className="bg-paper-50 rounded-xl p-4 border border-ink-100">
-            <div className="flex items-center gap-2 flex-wrap mb-2">
-              <DifficultyPill difficulty={mission.difficulty} size="sm" />
-              <PointsBadge points={potentialPoints} size="sm" />
-              {mission.paac_criteria_key && (
-                <span className="text-[10px] font-mono bg-ink-100 text-ink-700 px-1.5 py-0.5 rounded">
-                  PAAC {mission.paac_criteria_key}
-                </span>
-              )}
-            </div>
-            <p className="font-display font-semibold text-ink-900">{mission.title}</p>
-            <p className="text-xs text-ink-600 mt-1">{mission.description}</p>
-            {mission.success_criteria && (
-              <div className="mt-3 pt-3 border-t border-ink-100">
-                <p className="text-[11px] uppercase tracking-wider text-gold-700 font-semibold">
-                  Critério de sucesso
-                </p>
-                <p className="text-xs text-ink-700 mt-1">{mission.success_criteria}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Report */}
+        <div className="bg-paper-50 rounded-xl border border-ink-100 p-4 max-h-72 overflow-y-auto space-y-3">
           <div>
-            <p className="text-[11px] uppercase tracking-wider text-gold-700 font-semibold mb-2">
-              Relato do colaborador
+            <p className="text-xs font-semibold text-ink-900">{post.author_name}</p>
+            <p className="text-[11px] text-ink-400">
+              {fmtRelative(post.created_at)}
             </p>
-            <div className="bg-white rounded-xl p-4 border border-ink-100">
-              <p className="text-sm text-ink-800 whitespace-pre-wrap leading-relaxed">
-                {mission.report?.text}
-              </p>
-              {mission.report?.evidence_url && (
-                <a
-                  href={mission.report.evidence_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-sky-700 hover:underline mt-3"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                  {mission.report.evidence_url}
-                </a>
-              )}
-            </div>
           </div>
-
-          {/* Feedback */}
-          <div>
-            <label className="text-[11px] uppercase tracking-wider text-gold-700 font-semibold mb-1.5 block">
-              Seu feedback (aparece pra quem fez)
-            </label>
-            <Textarea
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              rows={3}
-              placeholder="Comente o que foi bem e/ou o que precisa ajustar…"
+          <Block label="Situação" text={post.situacao} />
+          <Block label="Objetivo" text={post.objetivo} />
+          <Block label="Resultado" text={post.resultado} accent />
+          {post.result_value != null && (
+            <p className="text-xs text-emerald-700 font-semibold">
+              Resultado em números: {post.result_value}
+            </p>
+          )}
+          {post.image_url && (
+            <img
+              src={post.image_url}
+              alt="evidência"
+              className="rounded-lg max-h-48 object-cover w-full"
             />
-          </div>
+          )}
         </div>
 
-        <DialogFooter className="gap-2 sm:justify-between">
+        <Field label="Feedback (necessário só para 'Pedir ajuste')">
+          <Textarea
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            rows={3}
+            placeholder="Ex: faltou colocar dados de quem participou."
+          />
+        </Field>
+
+        <DialogFooter className="gap-2 flex-col sm:flex-row">
           <Button
-            variant="ghost"
-            onClick={() => onRework(mission, feedback)}
+            variant="outline"
+            onClick={() => onRework(post, feedback)}
             disabled={!feedback.trim()}
-            className="text-rose-700 hover:text-rose-800 hover:bg-rose-50 gap-1.5"
+            className="gap-2"
           >
             <RotateCcw className="w-4 h-4" />
             Pedir ajuste
           </Button>
           <Button
-            onClick={() => onApprove(mission, feedback)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+            onClick={() => onApprove(post)}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
           >
-            <ThumbsUp className="w-4 h-4" />
-            Aprovar e creditar {potentialPoints} pts
+            <Check className="w-4 h-4" />
+            Publicar no feed
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -851,749 +905,436 @@ function ValidateMissionDialog({ open, mission, onClose, onApprove, onRework }) 
 }
 
 // ============================================================
-// DIALOG — REPORTAR CONCLUSÃO (colaborador)
-// ============================================================
-
-function ReportMissionDialog({ open, mission, onClose, onSubmit }) {
-  const [text, setText] = useState('');
-  const [evidence, setEvidence] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (open) {
-      setText(mission?.status === 'needs_rework' ? mission.report?.text || '' : '');
-      setEvidence(mission?.report?.evidence_url || '');
-      setSubmitting(false);
-    }
-  }, [open, mission?.id, mission?.status, mission?.report]);
-
-  if (!mission) return null;
-
-  const canSubmit = text.trim().length >= 40 && !submitting;
-
-  const handleSubmit = async () => {
-    setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 400));
-    onSubmit(mission, text.trim(), evidence.trim() || null);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="font-display text-xl">
-            {mission.status === 'needs_rework' ? 'Enviar novo relato' : 'Reportar conclusão'}
-          </DialogTitle>
-          <DialogDescription>
-            {mission.status === 'needs_rework'
-              ? 'O gestor pediu ajustes no último relato. Envie nova versão.'
-              : 'Descreva como você executou a missão. O gestor irá validar e creditar os pontos.'}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {/* Mission summary */}
-          <div className="bg-paper-50 rounded-xl p-4 border border-ink-100">
-            <div className="flex items-center gap-2 flex-wrap mb-2">
-              <DifficultyPill difficulty={mission.difficulty} size="sm" />
-              <DeadlinePill deadline={mission.deadline} size="sm" />
-            </div>
-            <p className="font-display font-semibold text-ink-900">{mission.title}</p>
-            {mission.success_criteria && (
-              <div className="mt-2 pt-2 border-t border-ink-100">
-                <p className="text-[11px] uppercase tracking-wider text-gold-700 font-semibold">
-                  Critério de sucesso
-                </p>
-                <p className="text-xs text-ink-700 mt-0.5">{mission.success_criteria}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Feedback anterior se rework */}
-          {mission.status === 'needs_rework' && mission.manager_feedback && (
-            <div className="bg-rose-50 rounded-xl p-4 border border-rose-200">
-              <p className="text-[11px] uppercase tracking-wider text-rose-700 font-semibold mb-1.5">
-                Feedback do gestor
-              </p>
-              <p className="text-sm text-rose-800 whitespace-pre-wrap">
-                {mission.manager_feedback}
-              </p>
-            </div>
-          )}
-
-          <div>
-            <label className="text-[11px] uppercase tracking-wider text-gold-700 font-semibold mb-1.5 block">
-              Como você executou a missão?
-            </label>
-            <Textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={6}
-              placeholder="Descreva o que foi feito, como foi feito e quais resultados você mediu. Mínimo 40 caracteres."
-            />
-            <p className="text-[11px] text-ink-500 mt-1">
-              {text.length} caracteres {text.length < 40 && '· mínimo 40'}
-            </p>
-          </div>
-
-          <div>
-            <label className="text-[11px] uppercase tracking-wider text-gold-700 font-semibold mb-1.5 block">
-              Link de evidência (opcional)
-            </label>
-            <Input
-              value={evidence}
-              onChange={(e) => setEvidence(e.target.value)}
-              placeholder="https://portal.arese.com.br/…"
-            />
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button
-            disabled={!canSubmit}
-            onClick={handleSubmit}
-            className="bg-ink-900 hover:bg-ink-800 text-gold-200 gap-1.5"
-          >
-            <Send className="w-4 h-4" />
-            {submitting ? 'Enviando…' : 'Enviar para validação'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ============================================================
-// APPROVAL FEEDBACK TOAST (celebração ao aprovar ou reportar)
-// ============================================================
-
-function ToastCelebrate({ show, message, icon: Icon = Trophy }) {
-  return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          initial={{ opacity: 0, y: 24, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 24, scale: 0.9 }}
-          transition={{ type: 'spring', stiffness: 280, damping: 22 }}
-          className="fixed bottom-6 right-6 z-50 bg-gold-shine text-ink-900 rounded-2xl shadow-2xl px-5 py-4 flex items-center gap-3 border-2 border-gold-500 max-w-xs"
-        >
-          <div className="w-10 h-10 rounded-xl bg-ink-900 flex items-center justify-center">
-            <Icon className="w-5 h-5 text-gold-300" />
-          </div>
-          <div>
-            <p className="font-display font-semibold text-sm">{message}</p>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-
-// ============================================================
-// VIEWS — GESTOR
-// ============================================================
-
-function GestorView({
-  leaderboard,
-  candidates,
-  pending,
-  allActive,
-  allCompleted,
-  onActivate,
-  onValidate,
-  onCreateManual,
-  currentEmail,
-}) {
-  const [tab, setTab] = useState('candidates');
-
-  return (
-    <div className="space-y-10">
-      {/* LEADERBOARD */}
-      <section>
-        <SectionHeader
-          eyebrow="Ranking"
-          title="Pódio do distrito"
-          action={
-            <span className="text-xs text-ink-500">
-              <Trophy className="w-3 h-3 inline mr-1" />
-              Competição saudável do ciclo
-            </span>
-          }
-        />
-        <div className="grid lg:grid-cols-[1.1fr_1fr] gap-5 items-start">
-          <div className="bg-paper-50 border border-ink-100 rounded-3xl p-6">
-            <Podium leaderboard={leaderboard} currentEmail={currentEmail} />
-          </div>
-          <LeaderboardList leaderboard={leaderboard} currentEmail={currentEmail} />
-        </div>
-      </section>
-
-      {/* PENDING VALIDATION */}
-      {pending.length > 0 && (
-        <section className="bg-gradient-to-br from-violet-50 to-paper-50 rounded-3xl p-6 border border-violet-200">
-          <SectionHeader
-            eyebrow="Ação sua"
-            title="Aguardando sua validação"
-            count={pending.length}
-          />
-          <div className="grid md:grid-cols-2 gap-3">
-            {pending.map((m) => (
-              <MissionCard
-                key={m.id}
-                mission={m}
-                showRep
-                actions={
-                  <Button
-                    onClick={() => onValidate(m)}
-                    className="bg-violet-600 hover:bg-violet-700 text-white gap-1.5 w-full"
-                    size="sm"
-                  >
-                    <ShieldCheck className="w-4 h-4" /> Validar relato
-                  </Button>
-                }
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* TABS */}
-      <section>
-        <SectionHeader
-          eyebrow="Gestão"
-          title="Missões do time"
-          action={
-            <Button
-              onClick={onCreateManual}
-              className="bg-ink-900 hover:bg-ink-800 text-gold-200 gap-1.5"
-              size="sm"
-            >
-              <Plus className="w-4 h-4" /> Criar missão manual
-            </Button>
-          }
-        />
-
-        <div className="flex gap-1 p-1 bg-paper-100 rounded-xl w-fit mb-5">
-          {[
-            { id: 'candidates', label: 'Candidatas PAAC', count: candidates.length },
-            { id: 'active', label: 'Ativas', count: allActive.length },
-            { id: 'completed', label: 'Concluídas', count: allCompleted.length },
-          ].map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition ${
-                tab === t.id
-                  ? 'bg-white shadow-soft text-ink-900'
-                  : 'text-ink-500 hover:text-ink-700'
-              }`}
-            >
-              {t.label}{' '}
-              <span className="text-xs opacity-60 ml-1">{t.count}</span>
-            </button>
-          ))}
-        </div>
-
-        {tab === 'candidates' &&
-          (candidates.length > 0 ? (
-            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3">
-              {candidates.map((c) => (
-                <CandidateCard
-                  key={c.id}
-                  candidate={c}
-                  onActivate={onActivate}
-                  showRep
-                />
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={CheckCircle2}
-              title="Nenhuma candidata pendente"
-              subtitle="Todas as tasks do PAAC já estão convertidas em missão."
-            />
-          ))}
-
-        {tab === 'active' &&
-          (allActive.length > 0 ? (
-            <div className="grid md:grid-cols-2 gap-3">
-              {allActive.map((m) => (
-                <MissionCard key={m.id} mission={m} showRep />
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={Target}
-              title="Nenhuma missão em andamento"
-              subtitle="Ative candidatas ou crie uma missão manual."
-            />
-          ))}
-
-        {tab === 'completed' &&
-          (allCompleted.length > 0 ? (
-            <div className="grid md:grid-cols-2 gap-3">
-              {allCompleted.map((m) => (
-                <MissionCard key={m.id} mission={m} showRep compact />
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon={Trophy}
-              title="Nada concluído ainda"
-              subtitle="Os pontos começam a chegar quando as primeiras missões forem aprovadas."
-            />
-          ))}
-      </section>
-    </div>
-  );
-}
-
-// ============================================================
-// VIEWS — COLABORADOR
-// ============================================================
-
-function ColaboradorView({
-  myMissions,
-  leaderboard,
-  myRank,
-  currentEmail,
-  onReport,
-}) {
-  const active = myMissions.filter((m) => m.status === 'active');
-  const pending = myMissions.filter((m) => m.status === 'pending_validation');
-  const rework = myMissions.filter((m) => m.status === 'needs_rework');
-  const completed = myMissions.filter((m) => m.status === 'completed');
-
-  return (
-    <div className="space-y-10">
-      {/* LEADERBOARD */}
-      <section>
-        <SectionHeader
-          eyebrow="Ranking"
-          title="Pódio do distrito"
-          action={
-            myRank && (
-              <span className="text-xs text-ink-500">
-                Você está em{' '}
-                <span className="font-bold text-gold-700">{myRank.rank}º</span>{' '}
-                · {myRank.points} pts
-              </span>
-            )
-          }
-        />
-        <div className="grid lg:grid-cols-[1.1fr_1fr] gap-5 items-start">
-          <div className="bg-paper-50 border border-ink-100 rounded-3xl p-6">
-            <Podium leaderboard={leaderboard} currentEmail={currentEmail} />
-          </div>
-          <LeaderboardList leaderboard={leaderboard} currentEmail={currentEmail} />
-        </div>
-      </section>
-
-      {/* Needs rework — prioridade */}
-      {rework.length > 0 && (
-        <section className="bg-rose-50 rounded-3xl p-6 border border-rose-200">
-          <SectionHeader
-            eyebrow="Atenção"
-            title="Ajustes solicitados pelo gestor"
-            count={rework.length}
-          />
-          <div className="space-y-3">
-            {rework.map((m) => (
-              <MissionCard
-                key={m.id}
-                mission={m}
-                actions={
-                  <>
-                    <div className="flex-1 text-xs text-rose-800 italic">
-                      "{m.manager_feedback}"
-                    </div>
-                    <Button
-                      onClick={() => onReport(m)}
-                      className="bg-rose-600 hover:bg-rose-700 text-white gap-1.5"
-                      size="sm"
-                    >
-                      <Send className="w-4 h-4" /> Reenviar relato
-                    </Button>
-                  </>
-                }
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Active missions */}
-      <section>
-        <SectionHeader
-          eyebrow="Em andamento"
-          title="Minhas missões ativas"
-          count={active.length}
-        />
-        {active.length > 0 ? (
-          <div className="grid md:grid-cols-2 gap-3">
-            {active.map((m) => (
-              <MissionCard
-                key={m.id}
-                mission={m}
-                actions={
-                  <>
-                    {m.suggested_course_id && (
-                      <a
-                        href={`/Course?id=${m.suggested_course_id}`}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-sky-200 bg-sky-50 text-sky-700 text-xs font-semibold hover:bg-sky-100 transition"
-                      >
-                        <BookOpen className="w-3.5 h-3.5" />
-                        Ver curso sugerido
-                      </a>
-                    )}
-                    <Button
-                      onClick={() => onReport(m)}
-                      className={`${m.suggested_course_id ? '' : 'w-full'} bg-ink-900 hover:bg-ink-800 text-gold-200 gap-1.5`}
-                      size="sm"
-                    >
-                      <Upload className="w-4 h-4" /> Reportar conclusão
-                    </Button>
-                  </>
-                }
-              />
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            icon={Target}
-            title="Nada ativo agora"
-            subtitle="Aguarde seu gestor ativar uma nova missão a partir da sua PAAC."
-          />
-        )}
-      </section>
-
-      {/* Pending validation */}
-      {pending.length > 0 && (
-        <section>
-          <SectionHeader
-            eyebrow="Aguardando"
-            title="Em validação pelo gestor"
-            count={pending.length}
-          />
-          <div className="grid md:grid-cols-2 gap-3">
-            {pending.map((m) => (
-              <MissionCard key={m.id} mission={m} compact />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Completed */}
-      <section>
-        <SectionHeader
-          eyebrow="Troféus"
-          title="Minhas conquistas"
-          count={completed.length}
-        />
-        {completed.length > 0 ? (
-          <div className="grid md:grid-cols-2 gap-3">
-            {completed.map((m) => (
-              <MissionCard key={m.id} mission={m} compact />
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            icon={Trophy}
-            title="Sua primeira conquista te espera"
-            subtitle="Conclua uma missão e envie pra validação pra começar a somar pontos."
-          />
-        )}
-      </section>
-    </div>
-  );
-}
-
-function EmptyState({ icon: Icon, title, subtitle }) {
-  return (
-    <div className="bg-paper-50 rounded-2xl p-10 text-center border border-ink-100">
-      <Icon className="w-10 h-10 text-ink-300 mx-auto mb-3" />
-      <p className="font-display font-semibold text-ink-900">{title}</p>
-      {subtitle && <p className="text-sm text-ink-500 mt-1">{subtitle}</p>}
-    </div>
-  );
-}
-
-// ============================================================
-// PAGE
+// MAIN PAGE
 // ============================================================
 
 export default function Athivar() {
-  const [role, setRole] = useState(demoStore.getRole());
   const [tick, setTick] = useState(0);
-  const [activateTarget, setActivateTarget] = useState(null); // candidate
-  const [createManual, setCreateManual] = useState(false);
-  const [validateTarget, setValidateTarget] = useState(null); // mission
-  const [reportTarget, setReportTarget] = useState(null); // mission
-  const [toast, setToast] = useState(null); // { msg, icon }
+  const [role, setRole] = useState(demoStore.getRole());
+  const [user, setUser] = useState(demoStore.getCurrentUser());
 
-  const refresh = useCallback(() => setTick((t) => t + 1), []);
+  const [tab, setTab] = useState('challenges');
+  const [selectedId, setSelectedId] = useState(null);
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [reportTarget, setReportTarget] = useState(null);
+  const [reportInitial, setReportInitial] = useState(null);
+  const [reviewTarget, setReviewTarget] = useState(null);
+
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
-    const onRoleChange = () => setRole(demoStore.getRole());
-    const onDataChange = () => refresh();
-    window.addEventListener('paac-role-change', onRoleChange);
-    window.addEventListener('athivar-change', onDataChange);
-    window.addEventListener('paac-evals-change', onDataChange);
-    return () => {
-      window.removeEventListener('paac-role-change', onRoleChange);
-      window.removeEventListener('athivar-change', onDataChange);
-      window.removeEventListener('paac-evals-change', onDataChange);
+    const reload = () => {
+      setTick((t) => t + 1);
+      setRole(demoStore.getRole());
+      setUser(demoStore.getCurrentUser());
     };
-  }, [refresh]);
+    window.addEventListener('athivar-change', reload);
+    window.addEventListener('paac-role-change', reload);
+    return () => {
+      window.removeEventListener('athivar-change', reload);
+      window.removeEventListener('paac-role-change', reload);
+    };
+  }, []);
 
-  const isGestor = role === 'gestor';
-  const currentUser = demoStore.getCurrentUser();
-  const currentEmail = currentUser.email;
+  // garante que tab selecionada faz sentido para o role
+  useEffect(() => {
+    if (role === 'colaborador' && tab === 'pending') setTab('challenges');
+  }, [role, tab]);
 
-  // Data
-  const leaderboard = useMemo(
-    () => athivarStore.getLeaderboard(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tick]
-  );
-  const candidates = useMemo(
-    () => athivarStore.getCandidateMissions(),
+  const challenges = useMemo(
+    () => athivarStore.getChallenges(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [tick]
   );
   const pending = useMemo(
-    () => athivarStore.getPendingValidation(),
+    () => athivarStore.getPendingPosts(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [tick]
   );
-  const allActive = useMemo(
-    () => athivarStore.getActive(),
+  const myPosts = useMemo(
+    () => athivarStore.getPostsByAuthor(user.email),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tick]
-  );
-  const allCompleted = useMemo(
-    () => athivarStore.getCompleted(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tick]
-  );
-  const myMissions = useMemo(
-    () => athivarStore.getMissionsByRep(currentEmail),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tick, currentEmail]
-  );
-  const myRank = useMemo(
-    () => athivarStore.getUserRank(currentEmail),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tick, currentEmail]
+    [tick, user.email]
   );
 
-  // Gestor team stats
-  const gestorStats = useMemo(() => {
-    const totalPoints = leaderboard.reduce((acc, r) => acc + r.points, 0);
-    const totalCompleted = leaderboard.reduce((acc, r) => acc + r.completed, 0);
-    return { totalPoints, totalCompleted, pendingCount: pending.length };
-  }, [leaderboard, pending]);
+  const challengesById = useMemo(() => {
+    const m = {};
+    challenges.forEach((c) => (m[c.id] = c));
+    return m;
+  }, [challenges]);
+
+  const showToast = (msg, Icon = Sparkles) => {
+    setToast({ msg, Icon, id: Date.now() });
+    setTimeout(() => setToast(null), 2200);
+  };
 
   // Handlers
-  const showToast = (msg, icon) => {
-    setToast({ msg, icon });
-    setTimeout(() => setToast(null), 2500);
+  const handleCreateChallenge = (data) => {
+    const created = athivarStore.createChallenge(data);
+    setCreateOpen(false);
+    showToast(`Desafio "${created.title}" lançado`, Trophy);
   };
 
-  const handleActivate = (config) => {
-    if (!activateTarget) return;
-    athivarStore.activateMission(activateTarget, config);
-    setActivateTarget(null);
-    showToast('Missão ativada com sucesso', Zap);
-  };
-
-  const handleCreateManual = (config) => {
-    athivarStore.createManualMission(config);
-    setCreateManual(false);
-    showToast('Missão criada', Plus);
-  };
-
-  const handleApprove = (mission, feedback) => {
-    const updated = athivarStore.approveMission(mission.id, feedback);
-    if (updated) {
-      // registra em evolution como melhoria de campo
-      evolutionStore.addImprovement(mission.rep_email, {
-        date: updated.approved_at,
-        title: updated.title,
-        description: `Missão aprovada (+${updated.points_awarded} pts). ${updated.report?.text || ''}`,
-        category: mission.suggested_course_id ? 'curso' : 'campo',
-        paac_key: mission.paac_criteria_key || undefined,
+  const handleSubmitPost = (data) => {
+    if (reportInitial?.id) {
+      athivarStore.resubmitPost(reportInitial.id, data);
+      showToast('Relato reenviado para validação', Send);
+    } else {
+      athivarStore.submitPost(reportTarget.id, {
+        author_email: user.email,
+        ...data,
       });
+      showToast('Relato enviado — aguardando aprovação do gestor', Send);
     }
-    setValidateTarget(null);
-    showToast(`+${updated.points_awarded} pts creditados a ${mission.rep_name}`, Trophy);
-  };
-
-  const handleRework = (mission, feedback) => {
-    athivarStore.requestRework(mission.id, feedback);
-    setValidateTarget(null);
-    showToast('Ajuste solicitado', RotateCcw);
-  };
-
-  const handleReport = (mission, text, evidence) => {
-    athivarStore.submitReport(mission.id, text, evidence);
     setReportTarget(null);
-    showToast('Relato enviado para validação', Send);
+    setReportInitial(null);
   };
+
+  const handleApprove = (post) => {
+    const updated = athivarStore.approvePost(post.id);
+    if (updated) {
+      const ch = athivarStore.getChallenge(post.challenge_id);
+      evolutionStore.addImprovement(post.author_email, {
+        date: updated.approved_at,
+        title: ch?.title || 'Desafio Athivar',
+        description: `Post publicado: "${post.resultado.substring(0, 120)}"`,
+        category: 'campo',
+      });
+      showToast(`Post de ${post.author_name} publicado no feed`, Check);
+    }
+    setReviewTarget(null);
+  };
+
+  const handleRework = (post, feedback) => {
+    athivarStore.requestPostRework(post.id, feedback);
+    setReviewTarget(null);
+    showToast('Ajuste solicitado ao colaborador', RotateCcw);
+  };
+
+  const handleLike = (post) => {
+    athivarStore.toggleLike(post.id, user.email);
+  };
+
+  const handleComment = (post, text) => {
+    athivarStore.addComment(post.id, {
+      author_email: user.email,
+      author_name: user.full_name,
+      text,
+    });
+  };
+
+  const openReport = (challenge, initial = null) => {
+    setReportTarget(challenge);
+    setReportInitial(initial);
+  };
+
+  const selected = selectedId ? challengesById[selectedId] : null;
+
+  // ----- RENDER -----
+
+  if (selected) {
+    const detailPosts = athivarStore.getPostsByChallenge(selected.id, {
+      onlyPublished: true,
+    });
+    const metrics = athivarStore.getChallengeMetrics(selected.id);
+    return (
+      <div className="space-y-8 min-h-[80vh]">
+        <ChallengeDetail
+          challenge={selected}
+          posts={detailPosts}
+          metrics={metrics}
+          role={role}
+          currentEmail={user.email}
+          onBack={() => setSelectedId(null)}
+          onReport={(c) => openReport(c)}
+          onLike={handleLike}
+          onComment={handleComment}
+        />
+
+        <NewPostDialog
+          open={!!reportTarget}
+          challenge={reportTarget}
+          initial={reportInitial}
+          onClose={() => {
+            setReportTarget(null);
+            setReportInitial(null);
+          }}
+          onSubmit={handleSubmitPost}
+        />
+
+        <ToastBar toast={toast} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10 min-h-[80vh]">
-      {/* HERO */}
-      <section className="relative overflow-hidden rounded-3xl bg-ink-grid text-white shadow-ink">
-        <div className="absolute -top-20 -right-10 h-64 w-64 rounded-full bg-gold-400/15 blur-3xl" />
-        <div className="relative grid lg:grid-cols-[1.6fr_auto] gap-8 px-7 py-8 lg:px-10 lg:py-10 items-center">
-          <div className="space-y-4">
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-500/15 border border-gold-400/30">
-              <Trophy className="w-3.5 h-3.5 text-gold-300" />
-              <span className="text-[11px] uppercase tracking-[0.2em] text-gold-200 font-semibold">
-                Etapa 4 · Ativação
-              </span>
-            </span>
-            <h1 className="font-display text-3xl lg:text-4xl font-semibold leading-[1.1]">
-              {isGestor ? (
-                <>
-                  Athivar — <span className="text-gold-300">Missões do Time</span>
-                </>
+      <Hero
+        role={role}
+        challenges={challenges}
+        pendingCount={pending.length}
+        onCreateChallenge={() => setCreateOpen(true)}
+      />
+
+      {/* Tabs */}
+      <div className="flex items-center gap-2 border-b border-ink-100">
+        <TabBtn
+          active={tab === 'challenges'}
+          onClick={() => setTab('challenges')}
+          icon={Target}
+          label="Desafios"
+        />
+        {role === 'gestor' && (
+          <TabBtn
+            active={tab === 'pending'}
+            onClick={() => setTab('pending')}
+            icon={Inbox}
+            label="Aprovações"
+            badge={pending.length || null}
+          />
+        )}
+        <TabBtn
+          active={tab === 'mine'}
+          onClick={() => setTab('mine')}
+          icon={Smile}
+          label="Meu mural"
+        />
+      </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={tab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.25 }}
+          className="space-y-6"
+        >
+          {tab === 'challenges' && (
+            <>
+              <SectionHeader
+                eyebrow="Em andamento"
+                title="Desafios do distrito"
+                subtitle="Clique num desafio para ver o feed e participar."
+              />
+              {challenges.length === 0 ? (
+                <EmptyState
+                  icon={Target}
+                  title="Nenhum desafio ainda"
+                  message={
+                    role === 'gestor'
+                      ? 'Lance o primeiro desafio para o time pelo botão acima.'
+                      : 'Aguarde o gestor lançar um desafio.'
+                  }
+                />
               ) : (
-                <>
-                  Minhas <span className="text-gold-300">Missões</span>
-                </>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {challenges.map((c) => (
+                    <ChallengeCard
+                      key={c.id}
+                      challenge={c}
+                      metrics={athivarStore.getChallengeMetrics(c.id)}
+                      onClick={() => setSelectedId(c.id)}
+                    />
+                  ))}
+                </div>
               )}
-            </h1>
-            <p className="text-ink-200 max-w-xl leading-relaxed">
-              {isGestor
-                ? 'Transforme as tasks da PAAC em missões ativas. O time ganha pontos, compete de forma saudável e a evolução vira visível.'
-                : 'Execute as missões ativadas pelo seu gestor. Cada entrega soma pontos — e entregar antes do prazo dá +20% de bônus.'}
-            </p>
-          </div>
-
-          {/* Stats */}
-          {isGestor ? (
-            <div className="grid grid-cols-3 gap-3 justify-self-start lg:justify-self-end">
-              <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 px-5 py-4 text-center min-w-[110px]">
-                <p className="font-display text-3xl font-semibold text-gold-300 tabular-nums">
-                  {gestorStats.totalPoints}
-                </p>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-ink-300 mt-1">
-                  pts no distrito
-                </p>
-              </div>
-              <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 px-5 py-4 text-center min-w-[110px]">
-                <p className="font-display text-3xl font-semibold text-white tabular-nums">
-                  {gestorStats.totalCompleted}
-                </p>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-ink-300 mt-1">
-                  concluídas
-                </p>
-              </div>
-              <div className="rounded-2xl bg-gold-shine px-5 py-4 text-center min-w-[110px]">
-                <p className="font-display text-3xl font-semibold text-ink-900 tabular-nums">
-                  {gestorStats.pendingCount}
-                </p>
-                <p className="text-[10px] uppercase tracking-[0.18em] text-ink-900/70 mt-1">
-                  p/ validar
-                </p>
-              </div>
-            </div>
-          ) : (
-            myRank && (
-              <div className="grid grid-cols-3 gap-3 justify-self-start lg:justify-self-end">
-                <div className="rounded-2xl bg-gold-shine px-5 py-4 text-center min-w-[110px]">
-                  <p className="font-display text-3xl font-semibold text-ink-900 tabular-nums">
-                    {myRank.rank}º
-                  </p>
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-ink-900/70 mt-1">
-                    posição
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 px-5 py-4 text-center min-w-[110px]">
-                  <p className="font-display text-3xl font-semibold text-gold-300 tabular-nums">
-                    {myRank.points}
-                  </p>
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-ink-300 mt-1">
-                    pontos
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 px-5 py-4 text-center min-w-[110px]">
-                  <p className="font-display text-3xl font-semibold text-white tabular-nums">
-                    {myRank.completed}
-                  </p>
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-ink-300 mt-1">
-                    concluídas
-                  </p>
-                </div>
-              </div>
-            )
+            </>
           )}
-        </div>
-      </section>
 
-      {/* CONTENT */}
-      {isGestor ? (
-        <GestorView
-          leaderboard={leaderboard}
-          candidates={candidates}
-          pending={pending}
-          allActive={allActive}
-          allCompleted={allCompleted}
-          onActivate={setActivateTarget}
-          onValidate={setValidateTarget}
-          onCreateManual={() => setCreateManual(true)}
-          currentEmail={currentEmail}
-        />
-      ) : (
-        <ColaboradorView
-          myMissions={myMissions}
-          leaderboard={leaderboard}
-          myRank={myRank}
-          currentEmail={currentEmail}
-          onReport={setReportTarget}
-        />
-      )}
+          {tab === 'pending' && role === 'gestor' && (
+            <>
+              <SectionHeader
+                eyebrow="Caixa de entrada"
+                title="Posts aguardando aprovação"
+                subtitle={`${pending.length} ${
+                  pending.length === 1 ? 'post' : 'posts'
+                } para revisar`}
+              />
+              {pending.length === 0 ? (
+                <EmptyState
+                  icon={Check}
+                  title="Tudo em dia!"
+                  message="Nenhum post pendente de aprovação."
+                />
+              ) : (
+                <div className="grid gap-5">
+                  {pending.map((post) => {
+                    const ch = challengesById[post.challenge_id];
+                    return (
+                      <PostCard
+                        key={post.id}
+                        post={{ ...post, challenge_unit: ch?.metric_unit }}
+                        currentEmail={user.email}
+                        statusBadge={
+                          <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded-full bg-amber-100 text-amber-700 inline-flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Pendente
+                          </span>
+                        }
+                        footerExtra={
+                          <div className="p-3 border-t border-ink-50 flex items-center justify-between gap-3 bg-paper-50/50">
+                            <p className="text-[11px] text-ink-500">
+                              Desafio: <strong>{ch?.title}</strong>
+                            </p>
+                            <Button
+                              size="sm"
+                              onClick={() => setReviewTarget(post)}
+                              className="bg-ink-900"
+                            >
+                              Revisar
+                            </Button>
+                          </div>
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
 
-      {/* DIALOGS */}
-      <MissionConfigDialog
-        open={!!activateTarget}
-        candidate={activateTarget}
-        onClose={() => setActivateTarget(null)}
-        onSubmit={handleActivate}
-        mode="activate"
+          {tab === 'mine' && (
+            <>
+              <SectionHeader
+                eyebrow="Seu histórico"
+                title="Meus posts"
+                subtitle="Acompanhe o que você já publicou e o que ainda está em aprovação."
+              />
+              {myPosts.length === 0 ? (
+                <EmptyState
+                  icon={Smile}
+                  title="Nada por aqui ainda"
+                  message="Entre num desafio e clique em 'Reportar minha ação' para começar."
+                />
+              ) : (
+                <div className="grid gap-5">
+                  {myPosts.map((post) => {
+                    const ch = challengesById[post.challenge_id];
+                    const badge =
+                      post.status === 'published' ? (
+                        <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 inline-flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Publicado
+                        </span>
+                      ) : post.status === 'pending_approval' ? (
+                        <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded-full bg-amber-100 text-amber-700 inline-flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> Aguardando
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded-full bg-rose-100 text-rose-700 inline-flex items-center gap-1">
+                          <RotateCcw className="w-3 h-3" /> Ajustar
+                        </span>
+                      );
+
+                    const extra =
+                      post.status === 'needs_rework' ? (
+                        <div className="p-4 border-t border-ink-50 bg-rose-50">
+                          <p className="text-[11px] uppercase font-semibold tracking-wider text-rose-700">
+                            Feedback do gestor
+                          </p>
+                          <p className="text-sm text-rose-800 mt-1">
+                            {post.feedback}
+                          </p>
+                          <Button
+                            size="sm"
+                            onClick={() => openReport(ch, post)}
+                            className="bg-rose-600 hover:bg-rose-700 text-white mt-3 gap-2"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                            Ajustar e reenviar
+                          </Button>
+                        </div>
+                      ) : null;
+
+                    return (
+                      <PostCard
+                        key={post.id}
+                        post={{ ...post, challenge_unit: ch?.metric_unit }}
+                        currentEmail={user.email}
+                        statusBadge={badge}
+                        footerExtra={extra}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Dialogs */}
+      <NewChallengeDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreate={handleCreateChallenge}
       />
-      <MissionConfigDialog
-        open={createManual}
-        onClose={() => setCreateManual(false)}
-        onSubmit={handleCreateManual}
-        mode="manual"
+      <NewPostDialog
+        open={!!reportTarget}
+        challenge={reportTarget}
+        initial={reportInitial}
+        onClose={() => {
+          setReportTarget(null);
+          setReportInitial(null);
+        }}
+        onSubmit={handleSubmitPost}
       />
-      <ValidateMissionDialog
-        open={!!validateTarget}
-        mission={validateTarget}
-        onClose={() => setValidateTarget(null)}
+      <ReviewPostDialog
+        open={!!reviewTarget}
+        post={reviewTarget}
+        onClose={() => setReviewTarget(null)}
         onApprove={handleApprove}
         onRework={handleRework}
       />
-      <ReportMissionDialog
-        open={!!reportTarget}
-        mission={reportTarget}
-        onClose={() => setReportTarget(null)}
-        onSubmit={handleReport}
-      />
 
-      {/* TOAST */}
-      <ToastCelebrate
-        show={!!toast}
-        message={toast?.msg}
-        icon={toast?.icon || Trophy}
-      />
+      <ToastBar toast={toast} />
     </div>
+  );
+}
+
+function TabBtn({ active, onClick, icon: Icon, label, badge }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`relative flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+        active
+          ? 'border-gold-500 text-ink-900'
+          : 'border-transparent text-ink-500 hover:text-ink-800'
+      }`}
+    >
+      <Icon className="w-4 h-4" />
+      {label}
+      {badge ? (
+        <span className="ml-1 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-white text-[10px] font-bold">
+          {badge}
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
+function ToastBar({ toast }) {
+  return (
+    <AnimatePresence>
+      {toast && (
+        <motion.div
+          key={toast.id}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 16 }}
+          className="fixed bottom-6 right-6 z-50 bg-ink-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 max-w-sm"
+        >
+          <toast.Icon className="w-4 h-4 text-gold-300" />
+          <span className="text-sm font-medium">{toast.msg}</span>
+          <button
+            onClick={() => null}
+            className="ml-2 text-ink-300 hover:text-white"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
