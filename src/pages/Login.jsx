@@ -88,12 +88,12 @@ export default function Login() {
                   animate={{ scale: [1, 1.06, 1] }}
                   transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
                 >
-                  <span className="font-display text-ink-900 text-2xl font-bold leading-none">M</span>
+                  <span className="font-display text-ink-900 text-2xl font-bold leading-none">E</span>
                 </motion.div>
               </div>
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-gold-300/80">
-                  {ROLE_LABEL[transition.role]} · Morente Academy
+                  {ROLE_LABEL[transition.role]} · Entheus
                 </p>
                 <p className="font-display text-xl font-semibold text-white mt-2">
                   Bem-vindo, {transition.name.split(' ')[0]}.
@@ -116,11 +116,11 @@ export default function Login() {
         >
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-xl bg-gold-shine shadow-gold flex items-center justify-center">
-              <span className="font-display text-ink-900 text-2xl font-bold leading-none">M</span>
+              <span className="font-display text-ink-900 text-2xl font-bold leading-none">E</span>
             </div>
             <div>
               <p className="font-display text-xl font-semibold tracking-tight text-white">
-                Morente Academy
+                Entheus
               </p>
               <p className="text-[11px] text-gold-200/70 mt-0.5 tracking-wider uppercase">
                 Desenvolvimento de Líderes
@@ -156,10 +156,10 @@ export default function Login() {
         >
           <div className="lg:hidden flex items-center gap-3 mb-6">
             <div className="h-10 w-10 rounded-xl bg-gold-shine shadow-gold flex items-center justify-center">
-              <span className="font-display text-ink-900 text-lg font-bold leading-none">M</span>
+              <span className="font-display text-ink-900 text-lg font-bold leading-none">E</span>
             </div>
             <div>
-              <p className="font-display text-base font-semibold text-ink-900">Morente Academy</p>
+              <p className="font-display text-base font-semibold text-ink-900">Entheus</p>
               <p className="text-[10px] text-ink-500 uppercase tracking-wider">Desenvolvimento de Líderes</p>
             </div>
           </div>

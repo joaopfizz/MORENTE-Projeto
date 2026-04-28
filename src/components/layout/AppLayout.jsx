@@ -32,7 +32,7 @@ import {
 import { base44 } from '@/api/base44Client';
 
 const DEFAULT_COMPANY = {
-  name: 'Morente Academy',
+  name: 'Entheus',
   logo_url: null,
   primary_color: '#0b1120',
 };

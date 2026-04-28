@@ -317,3 +317,9 @@ Sem essa variável, o app **roda 100% em modo demo** com os mock stores. É o fl
 6. **Evoluthion v2** — visão consolidada team/individual com editor de review
 7. **Athivar v2** — sistema completo de missões com gamificação, leaderboard pódio, integração com PAAC e Evoluthion
 8. **Login fake** — `RoleSwitcher` removido; tela `/Login` com e-mail+senha (qualquer senha) define o role; route guard + transição animada; logout pelo dropdown do avatar (atual)
+
+---
+
+## Proprietário
+
+**João Luis Pezzuol**
