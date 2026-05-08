@@ -212,7 +212,7 @@ export default function AppLayout({ children, currentPageName }) {
       )}
 
       <aside
-        className={`fixed lg:sticky top-0 h-screen z-30 transition-all duration-300 ease-in-out flex flex-col bg-ink-grid border-r border-ink-800/80
+        className={`fixed lg:sticky top-0 h-screen z-30 transition-all duration-300 ease-in-out flex flex-col bg-ink-grid border-r border-ink-800/80 overflow-hidden
           ${
             isSidebarOpen
               ? 'w-64 translate-x-0'
@@ -329,8 +329,8 @@ export default function AppLayout({ children, currentPageName }) {
         </div>
       </aside>
 
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="h-16 md:h-20 bg-white/80 backdrop-blur border-b border-ink-100 flex items-center justify-between px-3 md:px-6 z-20 gap-2">
+      <div className="flex-1 flex flex-col min-h-screen lg:h-screen lg:overflow-hidden">
+        <header className="sticky top-0 lg:static h-16 md:h-20 bg-white/80 backdrop-blur border-b border-ink-100 flex items-center justify-between px-3 md:px-6 z-20 gap-2">
           <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
             <Button
               variant="ghost"
@@ -383,7 +383,7 @@ export default function AppLayout({ children, currentPageName }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto scrollbar-thin bg-paper-grid p-4 md:p-6 lg:p-8">
+        <main className="flex-1 lg:overflow-y-auto scrollbar-thin bg-paper-grid p-4 md:p-6 lg:p-8">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={`${location.pathname}-${role}`}
