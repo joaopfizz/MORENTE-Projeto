@@ -4,6 +4,9 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Em produção (GitHub Pages) o app é servido em /MORENTE-Projeto/.
+  // Em dev (npm run dev) usa /. A var GITHUB_PAGES é definida pelo workflow.
+  base: process.env.GITHUB_PAGES === 'true' ? '/MORENTE-Projeto/' : '/',
   logLevel: 'error', // Suppress warnings, only show errors
   plugins: [
     base44({

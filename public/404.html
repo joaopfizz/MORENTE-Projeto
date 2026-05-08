@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Morente Academy</title>
+    <script type="text/javascript">
+      // SPA-GitHub-Pages redirect (https://github.com/rafgraph/spa-github-pages)
+      // Converte /MORENTE-Projeto/Athivar em /MORENTE-Projeto/?/Athivar
+      // O index.html então restaura a rota correta usando history.replaceState.
+      var pathSegmentsToKeep = 1; // /MORENTE-Projeto/ → manter 1 segmento
+      var l = window.location;
+      l.replace(
+        l.protocol +
+          '//' +
+          l.hostname +
+          (l.port ? ':' + l.port : '') +
+          l.pathname
+            .split('/')
+            .slice(0, 1 + pathSegmentsToKeep)
+            .join('/') +
+          '/?/' +
+          l.pathname
+            .slice(1)
+            .split('/')
+            .slice(pathSegmentsToKeep)
+            .join('/')
+            .replace(/&/g, '~and~') +
+          (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+          l.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>
