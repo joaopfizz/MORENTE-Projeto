@@ -150,7 +150,7 @@ function PaacDialog({ rep, onClose, onSaved }) {
   };
 
   const handleSave = () => {
-    if (filled < totalCriteria) return;
+    if (filled === 0) return; // exige pelo menos 1 critério avaliado
     setSaving(true);
     const tasks = generateTasks(scores, config);
     const leader = demoStore.getRole() === 'gestor'
@@ -349,13 +349,15 @@ function PaacDialog({ rep, onClose, onSaved }) {
               </button>
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                 <span className="text-xs text-ink-500">
-                  {filled < totalCriteria
-                    ? `Faltam ${totalCriteria - filled} critério(s)`
+                  {filled === 0
+                    ? 'Avalie ao menos 1 critério'
+                    : filled < totalCriteria
+                    ? `${filled}/${totalCriteria} preenchidos · você pode salvar parcial`
                     : 'Tudo pronto'}
                 </span>
                 <Button
                   onClick={handleSave}
-                  disabled={saving || filled < totalCriteria}
+                  disabled={saving || filled === 0}
                   className="bg-gold-400 hover:bg-gold-300 text-ink-900 font-semibold gap-2 shadow-gold h-11"
                 >
                   <Save className="w-4 h-4" />
