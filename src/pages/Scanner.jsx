@@ -28,6 +28,7 @@ import {
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { calcScore, PAAC_DEMANDA, PAAC_PDV, SCORE_LABEL, generateTasks } from '@/lib/paacConfig';
 import { demoStore, MOCK_TEAM, MOCK_LEADER_PROFILE } from '@/lib/paacMockData';
+import CriteriaInfo from '@/components/scanner/CriteriaInfo';
 
 const SCORE_OPTS = ['N', 'A', 'S'];
 const SCORE_STYLE = {
@@ -43,7 +44,7 @@ function ScoreButton({ value, selected, onChange }) {
       type="button"
       onClick={() => onChange(value)}
       title={SCORE_LABEL[value]}
-      className={`h-9 w-9 rounded-lg border-2 text-sm font-bold transition-all ${
+      className={`h-11 w-11 sm:h-9 sm:w-9 rounded-lg border-2 text-sm font-bold transition-all ${
         selected === value ? s.active : s.idle
       }`}
     >
@@ -52,11 +53,14 @@ function ScoreButton({ value, selected, onChange }) {
   );
 }
 
-function CriteriaRow({ crit, score, onChange }) {
+function CriteriaRow({ crit, score, onChange, paacType }) {
   return (
-    <div className="flex items-start gap-3 py-2.5 border-b border-ink-100 last:border-none group">
-      <p className="flex-1 text-sm text-ink-700 leading-relaxed">{crit.label}</p>
-      <div className="flex items-center gap-1.5 shrink-0">
+    <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3 py-3 border-b border-ink-100 last:border-none group">
+      <div className="flex-1 flex items-start gap-1.5 min-w-0">
+        <p className="flex-1 text-sm text-ink-700 leading-relaxed">{crit.label}</p>
+        <CriteriaInfo criteriaKey={crit.key} type={paacType} />
+      </div>
+      <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
         {SCORE_OPTS.map((v) => (
           <ScoreButton key={v} value={v} selected={score} onChange={onChange} />
         ))}
@@ -175,10 +179,10 @@ function PaacDialog({ rep, onClose, onSaved }) {
       <DialogPortal>
         <DialogOverlay className="fixed inset-0 z-50 bg-ink-950/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content
-          className="fixed left-[50%] top-[50%] z-50 translate-x-[-50%] translate-y-[-50%] w-[95vw] max-w-3xl max-h-[90vh] flex flex-col bg-paper-50 rounded-3xl shadow-ink overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-200"
+          className="fixed inset-0 sm:left-[50%] sm:top-[50%] sm:inset-auto z-50 sm:translate-x-[-50%] sm:translate-y-[-50%] w-full h-full sm:w-[95vw] sm:max-w-3xl sm:max-h-[90vh] sm:h-auto flex flex-col bg-paper-50 sm:rounded-3xl shadow-ink overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95 duration-200"
         >
           {/* Header */}
-          <div className="px-6 py-5 bg-ink-grid text-white flex items-center gap-4 shrink-0">
+          <div className="px-4 sm:px-6 py-4 sm:py-5 bg-ink-grid text-white flex items-center gap-3 sm:gap-4 shrink-0">
             <div className="h-11 w-11 rounded-full bg-gold-shine flex items-center justify-center">
               <span className="font-display text-lg font-semibold text-ink-900">
                 {rep.full_name?.charAt(0).toUpperCase()}
@@ -199,7 +203,7 @@ function PaacDialog({ rep, onClose, onSaved }) {
           {/* Body */}
           <div className="flex-1 overflow-y-auto scrollbar-thin">
             {step === 'type' && (
-              <div className="p-6 space-y-5">
+              <div className="p-4 sm:p-6 space-y-5">
                 <div>
                   <h3 className="font-display text-lg font-semibold text-ink-900">
                     Qual tipo de PAAC?
@@ -208,7 +212,7 @@ function PaacDialog({ rep, onClose, onSaved }) {
                     Escolha o formulário que se aplica ao acompanhamento de hoje.
                   </p>
                 </div>
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {[
                     { t: 'demanda', title: 'PAAC Demanda', desc: 'Acompanhamento de campo em visitas a médicos. 42 critérios.', color: 'from-violet-600 to-violet-800' },
                     { t: 'pdv', title: 'PAAC PDV', desc: 'Acompanhamento em pontos de venda. 13 critérios.', color: 'from-sky-600 to-sky-800' },
@@ -234,9 +238,9 @@ function PaacDialog({ rep, onClose, onSaved }) {
             )}
 
             {step === 'form' && (
-              <div className="p-6 space-y-6">
+              <div className="p-4 sm:p-6 space-y-5">
                 {/* Date + progress */}
-                <div className="bg-white rounded-2xl border border-ink-100 p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="bg-white rounded-2xl border border-ink-100 p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                   <div>
                     <label className="text-[10px] font-bold text-ink-500 uppercase tracking-wider">
                       Data
@@ -262,7 +266,7 @@ function PaacDialog({ rep, onClose, onSaved }) {
                       />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {SCORE_OPTS.map((v) => (
                       <span key={v} className="flex items-center gap-1 text-[11px] font-semibold">
                         <span
@@ -272,7 +276,7 @@ function PaacDialog({ rep, onClose, onSaved }) {
                         >
                           {v}
                         </span>
-                        {SCORE_LABEL[v]}
+                        <span className="hidden sm:inline">{SCORE_LABEL[v]}</span>
                       </span>
                     ))}
                   </div>
@@ -307,6 +311,7 @@ function PaacDialog({ rep, onClose, onSaved }) {
                                 crit={crit}
                                 score={scores[crit.key]}
                                 onChange={(v) => setScore(crit.key, v)}
+                                paacType={type}
                               />
                             ))}
                           </div>
@@ -335,14 +340,14 @@ function PaacDialog({ rep, onClose, onSaved }) {
 
           {/* Footer */}
           {step === 'form' && (
-            <div className="px-6 py-4 bg-white border-t border-ink-100 flex items-center justify-between shrink-0">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 bg-white border-t border-ink-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
               <button
                 onClick={() => setStep('type')}
-                className="flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900"
+                className="flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900 self-start min-h-[44px]"
               >
                 <ArrowLeft className="w-4 h-4" /> Trocar tipo
               </button>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                 <span className="text-xs text-ink-500">
                   {filled < totalCriteria
                     ? `Faltam ${totalCriteria - filled} critério(s)`
@@ -351,7 +356,7 @@ function PaacDialog({ rep, onClose, onSaved }) {
                 <Button
                   onClick={handleSave}
                   disabled={saving || filled < totalCriteria}
-                  className="bg-gold-400 hover:bg-gold-300 text-ink-900 font-semibold gap-2 shadow-gold"
+                  className="bg-gold-400 hover:bg-gold-300 text-ink-900 font-semibold gap-2 shadow-gold h-11"
                 >
                   <Save className="w-4 h-4" />
                   {saving ? 'Salvando…' : 'Salvar e gerar ficha'}

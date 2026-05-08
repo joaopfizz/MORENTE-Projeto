@@ -286,41 +286,41 @@ export default function Academy() {
       {/* HERO */}
       <section className="relative overflow-hidden rounded-3xl bg-ink-grid text-white shadow-ink">
         <div className="absolute -top-20 -right-10 h-64 w-64 rounded-full bg-gold-400/15 blur-3xl" />
-        <div className="relative grid lg:grid-cols-[1.6fr_auto] gap-8 px-7 py-8 lg:px-10 lg:py-10 items-center">
-          <div className="space-y-4">
+        <div className="relative grid lg:grid-cols-[1.6fr_auto] gap-6 lg:gap-8 px-5 py-7 sm:px-7 sm:py-8 lg:px-10 lg:py-10 items-center">
+          <div className="space-y-3 sm:space-y-4">
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-500/15 border border-gold-400/30">
               <BookOpen className="w-3.5 h-3.5 text-gold-300" />
               <span className="text-[11px] uppercase tracking-[0.2em] text-gold-200 font-semibold">
                 Etapa 3 · Aprendizado
               </span>
             </span>
-            <h1 className="font-display text-3xl lg:text-4xl font-semibold leading-[1.1]">
+            <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-semibold leading-[1.1]">
               A Academia dos <span className="text-gold-300">7 Pilares</span>
             </h1>
-            <p className="text-ink-200 max-w-xl leading-relaxed">
+            <p className="text-ink-200 max-w-xl leading-relaxed text-sm sm:text-base">
               Desenvolva sua liderança curso a curso, pilar a pilar. Escolha por
               competência ou siga a sequência recomendada na sua trilha.
             </p>
           </div>
-          <div className="flex gap-4 justify-self-start lg:justify-self-end">
-            <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 px-5 py-4 text-center min-w-[110px]">
-              <p className="font-display text-3xl font-semibold text-gold-300 tabular-nums">
+          <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-4 sm:justify-self-start lg:justify-self-end">
+            <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 px-3 py-3 sm:px-5 sm:py-4 text-center">
+              <p className="font-display text-2xl sm:text-3xl font-semibold text-gold-300 tabular-nums">
                 {completedCount}
               </p>
               <p className="text-[10px] uppercase tracking-[0.18em] text-ink-300 mt-1">
                 Concluídos
               </p>
             </div>
-            <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 px-5 py-4 text-center min-w-[110px]">
-              <p className="font-display text-3xl font-semibold text-white tabular-nums">
+            <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 px-3 py-3 sm:px-5 sm:py-4 text-center">
+              <p className="font-display text-2xl sm:text-3xl font-semibold text-white tabular-nums">
                 {inProgressCount}
               </p>
               <p className="text-[10px] uppercase tracking-[0.18em] text-ink-300 mt-1">
                 Em curso
               </p>
             </div>
-            <div className="rounded-2xl bg-gold-shine px-5 py-4 text-center min-w-[110px]">
-              <p className="font-display text-3xl font-semibold text-ink-900 tabular-nums">
+            <div className="rounded-2xl bg-gold-shine px-3 py-3 sm:px-5 sm:py-4 text-center">
+              <p className="font-display text-2xl sm:text-3xl font-semibold text-ink-900 tabular-nums">
                 {courses.length}
               </p>
               <p className="text-[10px] uppercase tracking-[0.18em] text-ink-900/70 mt-1">
@@ -371,7 +371,7 @@ export default function Academy() {
       </section>
 
       {/* SEARCH */}
-      <div className="relative max-w-xl">
+      <div className="relative w-full max-w-xl">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
         <Input
           placeholder="Buscar cursos, competências…"

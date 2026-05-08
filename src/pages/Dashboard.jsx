@@ -83,7 +83,7 @@ function JourneyPipeline({ currentStage = 'Academy', stageStatus = {} }) {
           })(),
         }}
       />
-      <div className="grid grid-cols-5 gap-2 relative">
+      <div className="grid grid-cols-5 gap-1 sm:gap-2 relative">
         {JOURNEY_STAGES.map((stage, idx) => {
           const currentIdx = JOURNEY_STAGES.findIndex((s) => s.key === currentStage);
           const isCurrent = stage.key === currentStage;
@@ -98,7 +98,7 @@ function JourneyPipeline({ currentStage = 'Academy', stageStatus = {} }) {
               className="flex flex-col items-center group"
             >
               <div
-                className={`relative h-[52px] w-[52px] rounded-full flex items-center justify-center transition-all border-2 ${
+                className={`relative h-10 w-10 sm:h-[52px] sm:w-[52px] rounded-full flex items-center justify-center transition-all border-2 ${
                   isCurrent
                     ? 'bg-gold-400 border-gold-400 text-ink-900 shadow-gold scale-110'
                     : isPast
@@ -106,27 +106,27 @@ function JourneyPipeline({ currentStage = 'Academy', stageStatus = {} }) {
                     : 'bg-white border-ink-200 text-ink-300 group-hover:border-gold-300'
                 }`}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                 {isPast && (
                   <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-emerald-500 ring-2 ring-paper-50 flex items-center justify-center">
                     <CheckCircle2 className="w-2.5 h-2.5 text-white" />
                   </span>
                 )}
               </div>
-              <div className="mt-3 text-center">
+              <div className="mt-2 sm:mt-3 text-center">
                 <p
-                  className={`text-sm font-semibold tracking-tight ${
+                  className={`text-[11px] sm:text-sm font-semibold tracking-tight leading-tight ${
                     isCurrent ? 'text-ink-900' : isPast ? 'text-ink-700' : 'text-ink-400'
                   }`}
                 >
                   {stage.label}
                 </p>
-                <p className="text-[10px] uppercase tracking-[0.16em] mt-0.5 text-ink-400">
+                <p className="hidden sm:block text-[10px] uppercase tracking-[0.16em] mt-0.5 text-ink-400">
                   {stage.subtitle}
                 </p>
                 {status && (
                   <p
-                    className={`text-[11px] mt-1 font-medium ${
+                    className={`hidden sm:block text-[11px] mt-1 font-medium ${
                       isCurrent ? 'text-gold-700' : 'text-ink-500'
                     }`}
                   >
@@ -148,7 +148,7 @@ function ContinueCard({ course }) {
       to={createPageUrl(`Course?id=${course.id}`)}
       className="group relative flex gap-4 items-stretch bg-white rounded-2xl overflow-hidden border border-ink-100 hover:border-gold-300 hover:shadow-soft transition-all"
     >
-      <div className="relative h-24 w-36 shrink-0 overflow-hidden">
+      <div className="relative h-24 w-24 sm:w-36 shrink-0 overflow-hidden">
         <img
           src={course.cover_image}
           alt={course.title}
@@ -323,7 +323,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-6 justify-self-center lg:justify-self-end">
+          <div className="flex items-center gap-4 sm:gap-6 justify-self-center lg:justify-self-end">
             <div className="space-y-3 text-right hidden sm:block">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.18em] text-gold-200/70">
@@ -343,7 +343,12 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
-            <ProgressRing percent={62} size={140} />
+            <div className="block sm:hidden">
+              <ProgressRing percent={62} size={104} />
+            </div>
+            <div className="hidden sm:block">
+              <ProgressRing percent={62} size={140} />
+            </div>
           </div>
         </div>
       </motion.section>
@@ -366,7 +371,7 @@ export default function Dashboard() {
             <span>Concluída</span>
           </div>
         </div>
-        <div className="bg-white rounded-2xl border border-ink-100 p-6 lg:p-8 shadow-soft">
+        <div className="bg-white rounded-2xl border border-ink-100 p-4 sm:p-6 lg:p-8 shadow-soft">
           <JourneyPipeline
             currentStage="Academy"
             stageStatus={{

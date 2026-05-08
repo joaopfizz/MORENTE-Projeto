@@ -7,7 +7,6 @@ import {
   Clock,
   Circle,
   ChevronDown,
-  ChevronUp,
   ChevronLeft,
   ChevronRight,
   MessageSquare,
@@ -27,6 +26,7 @@ import {
   MOCK_TEAM,
   demoStore,
 } from '@/lib/paacMockData';
+import CriteriaInfo from '@/components/scanner/CriteriaInfo';
 
 const SCORE_COLOR = {
   N: 'bg-rose-100 text-rose-700 border-rose-200',
@@ -171,92 +171,110 @@ function EvaluationCard({ ev, config }) {
               )}
             </div>
           </div>
-          {expanded ? (
-            <ChevronUp className="w-4 h-4 text-ink-400 mt-1 shrink-0" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-ink-400 mt-1 shrink-0" />
-          )}
+          <motion.div
+            animate={{ rotate: expanded ? 180 : 0 }}
+            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+            className="mt-1 shrink-0"
+          >
+            <ChevronDown className="w-4 h-4 text-ink-400" />
+          </motion.div>
         </div>
       </button>
 
-      {expanded && (
-        <div className="border-t border-ink-100">
-          {/* Score grid */}
-          <div className="p-5 space-y-6">
-            {config.map((section) => (
-              <div key={section.section}>
-                <p className="text-xs font-bold text-ink-500 uppercase tracking-wider mb-3">
-                  {section.section}. {section.label}
-                </p>
-                {section.subsections.map((sub) => (
-                  <div key={sub.key} className="mb-4">
-                    <p className="text-[11px] font-semibold text-gold-700 uppercase tracking-wider mb-2">
-                      {sub.key} — {sub.label}
-                    </p>
-                    <div className="space-y-1.5">
-                      {sub.criteria.map((crit) => (
-                        <div
-                          key={crit.key}
-                          className="flex items-start justify-between gap-3"
-                        >
-                          <p className="text-sm text-ink-700 leading-relaxed flex-1">
-                            {crit.label}
-                          </p>
-                          <ScorePill score={ev.scores?.[crit.key]} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+      {/* Tasks — sempre visível (mesmo com card colapsado) */}
+      {tasks.length > 0 && (
+        <div className="border-t border-ink-100 p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-semibold text-ink-800">
+              Tarefas de Desenvolvimento
+            </p>
+            <span className="text-xs text-ink-500 tabular-nums">
+              {doneTasks}/{totalTasks} concluídas
+            </span>
+          </div>
+          {totalTasks > 0 && (
+            <div className="h-1.5 bg-paper-100 rounded-full overflow-hidden mb-3">
+              <div
+                className="h-full bg-emerald-500 transition-all"
+                style={{ width: `${Math.round((doneTasks / totalTasks) * 100)}%` }}
+              />
+            </div>
+          )}
+          <div className="space-y-2">
+            {tasks.map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                onToggle={handleToggleTask}
+              />
             ))}
-
-            {/* Combinados */}
-            {ev.combinados && (
-              <div className="bg-sky-50 border border-sky-200 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <MessageSquare className="w-4 h-4 text-sky-600" />
-                  <p className="text-sm font-semibold text-sky-800">Combinados</p>
-                </div>
-                <p className="text-sm text-sky-700 whitespace-pre-wrap leading-relaxed">
-                  {ev.combinados}
-                </p>
-              </div>
-            )}
-
-            {/* Tasks */}
-            {tasks.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-sm font-semibold text-ink-800">
-                    Tarefas de Desenvolvimento
-                  </p>
-                  <span className="text-xs text-ink-500 tabular-nums">
-                    {doneTasks}/{totalTasks} concluídas
-                  </span>
-                </div>
-                {totalTasks > 0 && (
-                  <div className="h-1.5 bg-paper-100 rounded-full overflow-hidden mb-3">
-                    <div
-                      className="h-full bg-emerald-500 transition-all"
-                      style={{ width: `${Math.round((doneTasks / totalTasks) * 100)}%` }}
-                    />
-                  </div>
-                )}
-                <div className="space-y-2">
-                  {tasks.map((task) => (
-                    <TaskRow
-                      key={task.id}
-                      task={task}
-                      onToggle={handleToggleTask}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
+
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            key="expanded-detail"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{
+              height: { duration: 0.32, ease: [0.25, 0.1, 0.25, 1] },
+              opacity: { duration: 0.22, ease: 'easeOut' },
+            }}
+            style={{ overflow: 'hidden' }}
+            className="border-t border-ink-100"
+          >
+            {/* Score grid */}
+            <div className="p-4 sm:p-5 space-y-6">
+              {config.map((section) => (
+                <div key={section.section}>
+                  <p className="text-xs font-bold text-ink-500 uppercase tracking-wider mb-3">
+                    {section.section}. {section.label}
+                  </p>
+                  {section.subsections.map((sub) => (
+                    <div key={sub.key} className="mb-4">
+                      <p className="text-[11px] font-semibold text-gold-700 uppercase tracking-wider mb-2">
+                        {sub.key} — {sub.label}
+                      </p>
+                      <div className="space-y-1.5">
+                        {sub.criteria.map((crit) => (
+                          <div
+                            key={crit.key}
+                            className="flex items-start justify-between gap-2"
+                          >
+                            <div className="flex-1 flex items-start gap-1 min-w-0">
+                              <p className="text-sm text-ink-700 leading-relaxed flex-1">
+                                {crit.label}
+                              </p>
+                              <CriteriaInfo criteriaKey={crit.key} type={ev.type} />
+                            </div>
+                            <ScorePill score={ev.scores?.[crit.key]} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+
+              {/* Combinados */}
+              {ev.combinados && (
+                <div className="bg-sky-50 border border-sky-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MessageSquare className="w-4 h-4 text-sky-600" />
+                    <p className="text-sm font-semibold text-sky-800">Combinados</p>
+                  </div>
+                  <p className="text-sm text-sky-700 whitespace-pre-wrap leading-relaxed">
+                    {ev.combinados}
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -371,20 +389,31 @@ export default function Lidherar() {
             <button
               onClick={() => goToRep(-1)}
               aria-label="Colaborador anterior"
-              className="absolute left-3 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-white/5 hover:bg-gold-400 hover:text-ink-900 border border-white/15 hover:border-gold-400 text-white backdrop-blur flex items-center justify-center transition-all"
+              className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 z-10 h-11 w-11 sm:h-10 sm:w-10 rounded-full bg-white/5 hover:bg-gold-400 hover:text-ink-900 border border-white/15 hover:border-gold-400 text-white backdrop-blur flex items-center justify-center transition-all"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button
               onClick={() => goToRep(1)}
               aria-label="Próximo colaborador"
-              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-white/5 hover:bg-gold-400 hover:text-ink-900 border border-white/15 hover:border-gold-400 text-white backdrop-blur flex items-center justify-center transition-all"
+              className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-10 h-11 w-11 sm:h-10 sm:w-10 rounded-full bg-white/5 hover:bg-gold-400 hover:text-ink-900 border border-white/15 hover:border-gold-400 text-white backdrop-blur flex items-center justify-center transition-all"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
-            {/* Indicador "n de N" no topo direito */}
-            <div className="absolute top-4 right-4 z-10 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] font-semibold text-gold-200 uppercase tracking-widest backdrop-blur">
+            {/* Indicador "n de N" — escondido em mobile pra não cobrir conteúdo */}
+            <div className="hidden sm:block absolute top-4 right-4 z-10 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] font-semibold text-gold-200 uppercase tracking-widest backdrop-blur">
               {currentIndex + 1} de {team.length}
+            </div>
+            {/* Indicador mobile: bolinhas no rodapé do hero */}
+            <div className="sm:hidden absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5">
+              {team.map((_, i) => (
+                <span
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all ${
+                    i === currentIndex ? 'w-5 bg-gold-300' : 'w-1.5 bg-white/30'
+                  }`}
+                />
+              ))}
             </div>
           </>
         )}
@@ -398,7 +427,7 @@ export default function Lidherar() {
             animate="center"
             exit="exit"
             transition={{ duration: 0.32, ease: [0.25, 0.1, 0.25, 1] }}
-            className={`relative px-7 py-8 lg:px-16 lg:py-10 grid lg:grid-cols-[1fr_auto] gap-6 items-center ${
+            className={`relative px-5 py-7 sm:px-7 sm:py-8 lg:px-16 lg:py-10 grid lg:grid-cols-[1fr_auto] gap-5 lg:gap-6 items-center ${
               isLeader ? 'lg:px-20' : ''
             }`}
           >
@@ -409,20 +438,20 @@ export default function Lidherar() {
                   Etapa 2 · Desenvolvimento
                 </span>
               </span>
-              <h1 className="font-display text-3xl lg:text-4xl font-semibold">
+              <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-semibold">
                 Ficha de{' '}
                 <span className="text-gold-300">
                   {selectedRep ? selectedRep.full_name.split(' ')[0] : displayName.split(' ')[0]}
                 </span>
               </h1>
-              <p className="text-ink-200 max-w-lg leading-relaxed">
+              <p className="text-ink-200 max-w-lg leading-relaxed text-sm sm:text-base">
                 {viewingRep.position || 'Representante'}
                 {viewingRep.team ? ` · ${viewingRep.team}` : ''}
               </p>
             </div>
-            <div className="flex gap-4 flex-wrap">
-              <div className="rounded-2xl bg-white/5 border border-white/10 px-5 py-4 text-center">
-                <p className="font-display text-3xl font-semibold text-gold-300 tabular-nums">
+            <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-4 sm:flex-wrap">
+              <div className="rounded-2xl bg-white/5 border border-white/10 px-3 py-3 sm:px-5 sm:py-4 text-center">
+                <p className="font-display text-2xl sm:text-3xl font-semibold text-gold-300 tabular-nums">
                   {currentEvals.length}
                 </p>
                 <p className="text-[10px] uppercase tracking-[0.18em] text-ink-300 mt-1">
@@ -430,18 +459,18 @@ export default function Lidherar() {
                 </p>
               </div>
               {overallScore !== null && (
-                <div className="rounded-2xl bg-gold-shine px-5 py-4 text-center">
-                  <p className="font-display text-3xl font-semibold text-ink-900 tabular-nums">
+                <div className="rounded-2xl bg-gold-shine px-3 py-3 sm:px-5 sm:py-4 text-center">
+                  <p className="font-display text-2xl sm:text-3xl font-semibold text-ink-900 tabular-nums">
                     {overallScore}%
                   </p>
                   <p className="text-[10px] uppercase tracking-[0.18em] text-ink-900/70 mt-1">
-                    média geral
+                    média
                   </p>
                 </div>
               )}
               {totalTasks > 0 && (
-                <div className="rounded-2xl bg-white/5 border border-white/10 px-5 py-4 text-center">
-                  <p className="font-display text-3xl font-semibold text-white tabular-nums">
+                <div className="rounded-2xl bg-white/5 border border-white/10 px-3 py-3 sm:px-5 sm:py-4 text-center">
+                  <p className="font-display text-2xl sm:text-3xl font-semibold text-white tabular-nums">
                     {doneTasks}/{totalTasks}
                   </p>
                   <p className="text-[10px] uppercase tracking-[0.18em] text-ink-300 mt-1">
@@ -471,16 +500,16 @@ export default function Lidherar() {
 
       {/* LEADER: team selector */}
       {isLeader && team.length > 0 && (
-        <section className="bg-white rounded-2xl border border-ink-100 p-5">
+        <section className="bg-white rounded-2xl border border-ink-100 p-4 sm:p-5">
           <p className="text-[11px] uppercase tracking-[0.22em] text-gold-700 font-semibold mb-3">
             Visualizar ficha de
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2 flex-nowrap sm:flex-wrap overflow-x-auto scrollbar-thin -mx-4 px-4 sm:mx-0 sm:px-0 pb-1">
             {team.map((rep) => (
               <button
                 key={rep.id}
                 onClick={() => jumpToRep(rep)}
-                className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-all ${
+                className={`shrink-0 px-4 py-2 min-h-[44px] rounded-full text-sm font-medium border-2 transition-all whitespace-nowrap ${
                   selectedRep?.id === rep.id
                     ? 'bg-gold-400 text-ink-900 border-gold-400 shadow-gold'
                     : 'bg-white text-ink-600 border-ink-200 hover:border-gold-300'

@@ -65,7 +65,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-ink-grid text-white flex items-center justify-center p-6 font-sans relative overflow-hidden">
+    <div className="min-h-screen w-full bg-ink-grid text-white flex items-center justify-center p-4 sm:p-6 font-sans relative overflow-hidden">
       <AnimatePresence>
         {transition && (
           <motion.div
@@ -152,7 +152,7 @@ export default function Login() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
-          className="bg-paper-50 text-ink-900 rounded-2xl shadow-2xl border border-ink-100 p-8"
+          className="bg-paper-50 text-ink-900 rounded-2xl shadow-2xl border border-ink-100 p-6 sm:p-8"
         >
           <div className="lg:hidden flex items-center gap-3 mb-6">
             <div className="h-10 w-10 rounded-xl bg-gold-shine shadow-gold flex items-center justify-center">

@@ -113,15 +113,15 @@ function Hero({ role, challenges, pendingCount, onCreateChallenge }) {
   const activeCount = challenges.filter((c) => c.status === 'active').length;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-ink-grid text-white p-8 md:p-10 shadow-2xl">
+    <div className="relative overflow-hidden rounded-2xl bg-ink-grid text-white p-5 sm:p-8 md:p-10 shadow-2xl">
       <div className="absolute inset-0 bg-gradient-to-br from-gold-500/10 via-transparent to-transparent pointer-events-none" />
 
-      <div className="relative flex flex-wrap items-start justify-between gap-6">
+      <div className="relative flex flex-col lg:flex-row lg:flex-wrap items-start justify-between gap-5">
         <div className="max-w-2xl">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold-300/80">
             Etapa 4 · Athivar
           </p>
-          <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mt-2 leading-tight">
+          <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mt-2 leading-tight">
             Desafios coletivos que viram histórias para o time inteiro.
           </h1>
           <p className="text-ink-200/80 mt-3 text-sm leading-relaxed">
@@ -130,12 +130,12 @@ function Hero({ role, challenges, pendingCount, onCreateChallenge }) {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 backdrop-blur min-w-[140px]">
-            <div className="flex items-center gap-2 text-gold-300/80">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 w-full lg:w-auto">
+          <div className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 backdrop-blur">
+            <div className="flex items-center gap-1.5 text-gold-300/80">
               <Flame className="w-3.5 h-3.5" />
               <p className="text-[10px] uppercase tracking-wider font-semibold">
-                Desafios ativos
+                Ativos
               </p>
             </div>
             <p className="font-display text-2xl font-bold text-white mt-1">
@@ -143,8 +143,8 @@ function Hero({ role, challenges, pendingCount, onCreateChallenge }) {
             </p>
           </div>
           {role === 'gestor' && (
-            <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 backdrop-blur min-w-[140px]">
-              <div className="flex items-center gap-2 text-gold-300/80">
+            <div className="bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 sm:px-4 sm:py-3 backdrop-blur">
+              <div className="flex items-center gap-1.5 text-gold-300/80">
                 <Inbox className="w-3.5 h-3.5" />
                 <p className="text-[10px] uppercase tracking-wider font-semibold">
                   Pra aprovar
@@ -159,10 +159,10 @@ function Hero({ role, challenges, pendingCount, onCreateChallenge }) {
       </div>
 
       {role === 'gestor' && (
-        <div className="relative mt-6">
+        <div className="relative mt-5 sm:mt-6">
           <Button
             onClick={onCreateChallenge}
-            className="bg-gold-shine text-ink-900 hover:opacity-90 font-semibold gap-2 shadow-gold"
+            className="w-full sm:w-auto bg-gold-shine text-ink-900 hover:opacity-90 font-semibold gap-2 shadow-gold h-11"
           >
             <Plus className="w-4 h-4" />
             Lançar novo desafio
@@ -256,23 +256,23 @@ function PostCard({ post, currentEmail, onLike, onComment, statusBadge, footerEx
   return (
     <article className="bg-white border border-ink-100 rounded-2xl shadow-sm overflow-hidden">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-ink-50">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10 border border-gold-200">
+      <header className="flex items-center justify-between p-3 sm:p-4 border-b border-ink-50 gap-2">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <Avatar className="h-10 w-10 border border-gold-200 shrink-0">
             <AvatarFallback className="bg-ink-900 text-gold-200 font-semibold text-xs">
               {initials(post.author_name)}
             </AvatarFallback>
           </Avatar>
-          <div>
-            <p className="text-sm font-semibold text-ink-900 leading-tight">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-ink-900 leading-tight truncate">
               {post.author_name}
             </p>
-            <p className="text-[11px] text-ink-400">
+            <p className="text-[11px] text-ink-400 truncate">
               {post.author_team} · {fmtRelative(post.created_at)}
             </p>
           </div>
         </div>
-        {statusBadge}
+        {statusBadge && <div className="shrink-0">{statusBadge}</div>}
       </header>
 
       {/* Body */}
@@ -306,20 +306,20 @@ function PostCard({ post, currentEmail, onLike, onComment, statusBadge, footerEx
           <div className="flex items-center gap-1 px-2 py-1.5">
             <button
               onClick={() => onLike?.(post)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] rounded-lg text-sm transition-colors ${
                 liked
                   ? 'text-rose-600 bg-rose-50 hover:bg-rose-100'
                   : 'text-ink-500 hover:bg-paper-100'
               }`}
             >
-              <Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
+              <Heart className={`w-5 h-5 ${liked ? 'fill-current' : ''}`} />
               <span className="font-semibold">{post.likes.length}</span>
             </button>
             <button
               onClick={() => setShowCommentBox((s) => !s)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-ink-500 hover:bg-paper-100 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] rounded-lg text-sm text-ink-500 hover:bg-paper-100 transition-colors"
             >
-              <MessageCircle className="w-4 h-4" />
+              <MessageCircle className="w-5 h-5" />
               <span className="font-semibold">{post.comments.length}</span>
             </button>
           </div>
@@ -426,9 +426,9 @@ function ChallengeDetail({
       </button>
 
       {/* Header */}
-      <div className="bg-gradient-to-br from-ink-900 to-ink-800 text-white rounded-2xl p-6 md:p-8 shadow-2xl">
-        <div className="flex items-start gap-4">
-          <div className="text-4xl">{challenge.cover_emoji}</div>
+      <div className="bg-gradient-to-br from-ink-900 to-ink-800 text-white rounded-2xl p-5 sm:p-6 md:p-8 shadow-2xl">
+        <div className="flex items-start gap-3 sm:gap-4">
+          <div className="text-3xl sm:text-4xl">{challenge.cover_emoji}</div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-200">
@@ -440,10 +440,10 @@ function ChallengeDetail({
               </span>
               <span className="text-[11px] text-ink-300 flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3" />
-                criado por {challenge.created_by_name}
+                <span className="truncate max-w-[140px] sm:max-w-none">{challenge.created_by_name}</span>
               </span>
             </div>
-            <h2 className="font-display text-2xl font-bold tracking-tight mt-2">
+            <h2 className="font-display text-xl sm:text-2xl font-bold tracking-tight mt-2 leading-tight">
               {challenge.title}
             </h2>
             <p className="text-ink-200/80 text-sm mt-2 leading-relaxed">
@@ -452,8 +452,8 @@ function ChallengeDetail({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 mt-6">
-          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-5 sm:mt-6">
+          <div className="bg-white/5 border border-white/10 rounded-xl px-2.5 py-2.5 sm:px-4 sm:py-3">
             <div className="flex items-center gap-1.5 text-gold-300/80">
               <Users className="w-3 h-3" />
               <span className="text-[10px] uppercase tracking-wider font-semibold">
@@ -468,7 +468,7 @@ function ChallengeDetail({
               </span>
             </p>
           </div>
-          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+          <div className="bg-white/5 border border-white/10 rounded-xl px-2.5 py-2.5 sm:px-4 sm:py-3">
             <div className="flex items-center gap-1.5 text-gold-300/80">
               <MessageCircle className="w-3 h-3" />
               <span className="text-[10px] uppercase tracking-wider font-semibold">
@@ -479,7 +479,7 @@ function ChallengeDetail({
               {metrics.posts_count}
             </p>
           </div>
-          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+          <div className="bg-white/5 border border-white/10 rounded-xl px-2.5 py-2.5 sm:px-4 sm:py-3">
             <div className="flex items-center gap-1.5 text-gold-300/80">
               <TrendingUp className="w-3 h-3" />
               <span className="text-[10px] uppercase tracking-wider font-semibold">
@@ -1078,7 +1078,7 @@ export default function Athivar() {
       />
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-ink-100">
+      <div className="flex items-center gap-1 sm:gap-2 border-b border-ink-100 overflow-x-auto scrollbar-thin -mx-4 px-4 sm:mx-0 sm:px-0">
         <TabBtn
           active={tab === 'challenges'}
           onClick={() => setTab('challenges')}
@@ -1297,7 +1297,7 @@ function TabBtn({ active, onClick, icon: Icon, label, badge }) {
   return (
     <button
       onClick={onClick}
-      className={`relative flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+      className={`relative flex items-center gap-2 px-3 sm:px-4 py-2.5 min-h-[44px] text-sm font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap shrink-0 ${
         active
           ? 'border-gold-500 text-ink-900'
           : 'border-transparent text-ink-500 hover:text-ink-800'

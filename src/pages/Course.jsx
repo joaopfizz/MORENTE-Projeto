@@ -85,7 +85,7 @@ function Sidebar({ course, steps, currentIdx, completedIds, quizCompleted, repor
   }, [steps]);
 
   return (
-    <aside className="w-full lg:w-80 shrink-0 bg-white border border-ink-100 rounded-2xl overflow-hidden flex flex-col">
+    <aside className="w-full lg:w-80 shrink-0 bg-white border border-ink-100 rounded-2xl overflow-hidden flex flex-col max-h-[55vh] lg:max-h-none">
       <div className="px-5 py-4 bg-ink-grid text-white">
         <p className="text-[10px] uppercase tracking-[0.2em] text-gold-300 font-semibold">
           Conteúdo do curso
@@ -388,7 +388,7 @@ function QuizViewer({ course, initialAnswers, initialScore, onSave }) {
                   return (
                     <label
                       key={opt.id}
-                      className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${style} ${
+                      className={`flex items-start gap-3 p-4 sm:p-3 rounded-xl border-2 cursor-pointer transition-all min-h-[52px] ${style} ${
                         submitted ? 'cursor-default' : ''
                       }`}
                     >
@@ -398,7 +398,7 @@ function QuizViewer({ course, initialAnswers, initialScore, onSave }) {
                         checked={isChosen}
                         disabled={submitted}
                         onChange={() => setAnswers({ ...answers, [q.id]: opt.id })}
-                        className="mt-0.5 accent-gold-500"
+                        className="mt-1 w-5 h-5 sm:w-4 sm:h-4 accent-gold-500"
                       />
                       <span className="text-sm text-ink-800 flex-1">{opt.text}</span>
                       {submitted && isCorrect && (
@@ -655,14 +655,14 @@ export default function Course() {
             {course.instructor} · {course.pillar_label}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="text-right">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="text-right shrink-0">
             <p className="text-[10px] uppercase tracking-wider text-ink-500 font-semibold">
               Progresso
             </p>
             <p className="font-display text-xl font-semibold text-ink-900">{percent}%</p>
           </div>
-          <div className="w-36 h-2 bg-paper-100 rounded-full overflow-hidden">
+          <div className="flex-1 sm:w-36 h-2 bg-paper-100 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-gold-500 to-gold-300 transition-all"
               style={{ width: `${percent}%` }}

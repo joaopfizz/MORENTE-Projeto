@@ -713,7 +713,7 @@ function TeamRepCard({ summary, isActive, onClick }) {
           <p className="font-display text-sm font-semibold text-ink-900 tabular-nums">
             {tasks.completed}/{tasks.total}
           </p>
-          <p className="text-[9px] uppercase tracking-wider text-ink-500 font-semibold">
+          <p className="text-[10px] sm:text-[9px] uppercase tracking-wider text-ink-500 font-semibold">
             Tasks
           </p>
         </div>
@@ -721,7 +721,7 @@ function TeamRepCard({ summary, isActive, onClick }) {
           <p className="font-display text-sm font-semibold text-ink-900 tabular-nums">
             {courses.done.length}
           </p>
-          <p className="text-[9px] uppercase tracking-wider text-ink-500 font-semibold">
+          <p className="text-[10px] sm:text-[9px] uppercase tracking-wider text-ink-500 font-semibold">
             Cursos
           </p>
         </div>
@@ -729,7 +729,7 @@ function TeamRepCard({ summary, isActive, onClick }) {
           <p className="font-display text-sm font-semibold text-ink-900 tabular-nums">
             {improvements.length}
           </p>
-          <p className="text-[9px] uppercase tracking-wider text-ink-500 font-semibold">
+          <p className="text-[10px] sm:text-[9px] uppercase tracking-wider text-ink-500 font-semibold">
             Melhorias
           </p>
         </div>
@@ -989,8 +989,8 @@ export default function Evoluthion() {
 
           {isGestor && teamStats && (
             <div className="grid grid-cols-2 gap-3 justify-self-start lg:justify-self-end">
-              <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 px-5 py-4 text-center min-w-[120px]">
-                <p className="font-display text-3xl font-semibold text-gold-300 tabular-nums">
+              <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 px-3 py-3 sm:px-5 sm:py-4 text-center">
+                <p className="font-display text-2xl sm:text-3xl font-semibold text-gold-300 tabular-nums">
                   {teamStats.completedTasks}
                   <span className="text-white/40 text-xl">/{teamStats.totalTasks}</span>
                 </p>
@@ -998,24 +998,24 @@ export default function Evoluthion() {
                   Tasks feitas
                 </p>
               </div>
-              <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 px-5 py-4 text-center min-w-[120px]">
-                <p className="font-display text-3xl font-semibold text-white tabular-nums">
+              <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 px-3 py-3 sm:px-5 sm:py-4 text-center">
+                <p className="font-display text-2xl sm:text-3xl font-semibold text-white tabular-nums">
                   {teamStats.avgPerf}%
                 </p>
                 <p className="text-[10px] uppercase tracking-[0.18em] text-ink-300 mt-1">
                   PAAC médio
                 </p>
               </div>
-              <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 px-5 py-4 text-center min-w-[120px]">
-                <p className="font-display text-3xl font-semibold text-white tabular-nums">
+              <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 px-3 py-3 sm:px-5 sm:py-4 text-center">
+                <p className="font-display text-2xl sm:text-3xl font-semibold text-white tabular-nums">
                   {teamStats.coursesDone}
                 </p>
                 <p className="text-[10px] uppercase tracking-[0.18em] text-ink-300 mt-1">
                   Cursos concluídos
                 </p>
               </div>
-              <div className="rounded-2xl bg-gold-shine px-5 py-4 text-center min-w-[120px]">
-                <p className="font-display text-3xl font-semibold text-ink-900 tabular-nums">
+              <div className="rounded-2xl bg-gold-shine px-3 py-3 sm:px-5 sm:py-4 text-center">
+                <p className="font-display text-2xl sm:text-3xl font-semibold text-ink-900 tabular-nums">
                   {teamStats.reviewsWritten}
                   <span className="text-ink-900/40 text-xl">/{team.length}</span>
                 </p>

@@ -142,6 +142,29 @@ export default function AppLayout({ children, currentPageName }) {
     role: role === 'gestor' ? 'super_admin' : 'colaborador',
   };
 
+  // Fecha a sidebar automaticamente ao trocar de página em mobile
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setIsSidebarOpen(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  // Define estado inicial da sidebar baseado no tamanho da tela
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const sync = () => {
+      if (window.innerWidth < 1024) {
+        setIsSidebarOpen(false);
+      } else {
+        setIsSidebarOpen(true);
+      }
+    };
+    sync();
+    window.addEventListener('resize', sync);
+    return () => window.removeEventListener('resize', sync);
+  }, []);
+
   useEffect(() => {
     const fetchUserAndCompany = async () => {
       try {
@@ -307,31 +330,39 @@ export default function AppLayout({ children, currentPageName }) {
       </aside>
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="h-20 bg-white/80 backdrop-blur border-b border-ink-100 flex items-center justify-between px-6 z-20">
-          <div className="flex items-center gap-4 flex-1">
+        <header className="h-16 md:h-20 bg-white/80 backdrop-blur border-b border-ink-100 flex items-center justify-between px-3 md:px-6 z-20 gap-2">
+          <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="text-ink-500 hover:text-ink-900"
+              className="text-ink-500 hover:text-ink-900 shrink-0"
             >
               <Menu className="w-5 h-5" />
             </Button>
 
-            <div className="hidden md:flex relative max-w-md w-96">
+            {/* Marca compacta visível só em mobile (quando sidebar fechada) */}
+            <div className="flex lg:hidden items-center gap-2 min-w-0">
+              <span className="font-display text-base font-semibold text-ink-900 truncate">
+                {company.name}
+              </span>
+            </div>
+
+            {/* Search só em desktop largo */}
+            <div className="hidden lg:flex relative max-w-md flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
               <input
                 type="text"
                 placeholder="Buscar cursos, competências, colegas…"
                 className="w-full pl-10 pr-4 py-2.5 bg-paper-50 border border-ink-100 rounded-full text-sm placeholder:text-ink-400 focus:ring-2 focus:ring-gold-400/40 focus:border-gold-400 outline-none transition-all"
               />
-              <kbd className="hidden lg:flex absolute right-3 top-1/2 -translate-y-1/2 items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold text-ink-400 bg-white border border-ink-200 rounded">
+              <kbd className="hidden xl:flex absolute right-3 top-1/2 -translate-y-1/2 items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold text-ink-400 bg-white border border-ink-200 rounded">
                 ⌘K
               </kbd>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 md:gap-3 shrink-0">
             <Button
               variant="ghost"
               size="icon"
@@ -352,7 +383,7 @@ export default function AppLayout({ children, currentPageName }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto scrollbar-thin bg-paper-grid p-6 md:p-8">
+        <main className="flex-1 overflow-y-auto scrollbar-thin bg-paper-grid p-4 md:p-6 lg:p-8">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={`${location.pathname}-${role}`}
