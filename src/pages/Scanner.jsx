@@ -26,6 +26,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { AnimatePresence, motion } from 'framer-motion';
 import { calcScore, PAAC_DEMANDA, PAAC_PDV, SCORE_LABEL, generateTasks } from '@/lib/paacConfig';
 import { demoStore, MOCK_TEAM, MOCK_LEADER_PROFILE } from '@/lib/paacMockData';
 import CriteriaInfo from '@/components/scanner/CriteriaInfo';
@@ -202,8 +203,15 @@ function PaacDialog({ rep, onClose, onSaved }) {
 
           {/* Body */}
           <div className="flex-1 overflow-y-auto scrollbar-thin">
+          <AnimatePresence mode="wait" initial={false}>
             {step === 'type' && (
-              <div className="p-4 sm:p-6 space-y-5">
+              <motion.div
+                key="step-type"
+                initial={{ opacity: 0, x: -24 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -24 }}
+                transition={{ duration: 0.32, ease: [0.25, 0.1, 0.25, 1] }}
+                className="p-4 sm:p-6 space-y-5">
                 <div>
                   <h3 className="font-display text-lg font-semibold text-ink-900">
                     Qual tipo de PAAC?
@@ -234,11 +242,18 @@ function PaacDialog({ rep, onClose, onSaved }) {
                     </button>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {step === 'form' && (
-              <div className="p-4 sm:p-6 space-y-5">
+              <motion.div
+                key="step-form"
+                initial={{ opacity: 0, x: 24 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 24 }}
+                transition={{ duration: 0.32, ease: [0.25, 0.1, 0.25, 1] }}
+                className="p-4 sm:p-6 space-y-5"
+              >
                 {/* Date + progress */}
                 <div className="bg-white rounded-2xl border border-ink-100 p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                   <div>
@@ -334,8 +349,9 @@ function PaacDialog({ rep, onClose, onSaved }) {
                     className="w-full px-4 py-3 border border-ink-200 rounded-xl text-sm resize-none focus:ring-2 focus:ring-gold-400/40 focus:border-gold-400 outline-none"
                   />
                 </div>
-              </div>
+              </motion.div>
             )}
+          </AnimatePresence>
           </div>
 
           {/* Footer */}
